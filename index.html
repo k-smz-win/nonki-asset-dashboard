@@ -483,8 +483,8 @@ function build_sessions(sessions) {
       </div>
       <div class="progress-wrap">
         <div class="progress-header">
-          <span>進捗 [Progress]</span>
-          <span>${cur} / ${tgt} 件（${pct}%）</span>
+          <span>本採用まであと <strong style="color:#1a1c23">${tgt - cur}件</strong></span>
+          <span style="color:#9ca3af">${cur} / ${tgt} 件</span>
         </div>
         <progress value="${cur}" max="${tgt}"></progress>
       </div>
