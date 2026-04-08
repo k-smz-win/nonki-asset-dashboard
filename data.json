@@ -1,6 +1,6 @@
 {
   "meta": {
-    "updated_at": "2026-04-08 23:28",
+    "updated_at": "2026-04-08 23:36",
     "version": "1.0"
   },
   "system": {
@@ -50,6 +50,12 @@
       "alert": null
     }
   },
+  "signal_state": {
+    "status": "in_position",
+    "label": "ポジション保有中",
+    "sub": "次のシグナル待機中"
+  },
+  "last_trade_elapsed": "2時間前",
   "recent_trades": [
     {
       "pair": "USDJPY",

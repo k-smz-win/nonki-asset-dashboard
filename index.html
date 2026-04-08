@@ -321,6 +321,55 @@
     .alert-hist-time { color: #9ca3af; white-space: nowrap; font-size: 12px; padding-top: 1px; }
     .alert-hist-msg  { color: #374151; }
 
+    /* ── ① シグナル状態カード ──────────────────────────── */
+    .signal-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 20px;
+    }
+    .signal-icon { font-size: 30px; flex-shrink: 0; }
+    .signal-label { font-size: 16px; font-weight: 700; color: #1a1c23; }
+    .signal-sub { font-size: 13px; color: #6b7280; margin-top: 3px; }
+    .signal-card.status-waiting  { border-left: 4px solid #6b7280; }
+    .signal-card.status-in_position { border-left: 4px solid #d97706; }
+    .signal-card.status-caution  { border-left: 4px solid #dc2626; }
+
+    /* ── ② 最終トレード経過時間 ──────────────────────── */
+    .elapsed-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .elapsed-row strong { color: #374151; }
+
+    /* ── ③ DDゲージ ──────────────────────────────────── */
+    .dd-gauge-wrap { margin-top: 4px; }
+    .dd-gauge-bar {
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 5px;
+    }
+    .dd-gauge-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: #16a34a;
+      transition: width 0.4s;
+    }
+    .dd-gauge-fill.warn   { background: #d97706; }
+    .dd-gauge-fill.danger { background: #dc2626; }
+    .dd-gauge-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
     /* ── エラー表示 ───────────────────────────────────── */
     .error-card {
       background: #ffffff;
@@ -405,6 +454,31 @@ function dd_class(r) {
 
 // ── ③ タブ状態 ──────────────────────────────────────────────
 let _current_tab = "monthly"; // "daily" | "monthly"
+
+// ── ① シグナル状態カード ─────────────────────────────────────
+function build_signal_state(signal_state, last_trade_elapsed) {
+  const s      = signal_state || { status: "waiting", label: "監視中", sub: "" };
+  const status = s.status || "waiting";
+  const icons  = {
+    waiting:     "📡",
+    in_position: "🟡",
+    caution:     "🚨",
+  };
+  const icon = icons[status] || "📡";
+  const elapsed_html = last_trade_elapsed
+    ? `<div class="elapsed-row">⏱ 最終トレード: <strong>${last_trade_elapsed}</strong></div>`
+    : "";
+
+  return `
+    <div class="card signal-card status-${status}">
+      <div class="signal-icon">${icon}</div>
+      <div>
+        <div class="signal-label">${s.label}</div>
+        <div class="signal-sub">${s.sub || ""}</div>
+        ${elapsed_html}
+      </div>
+    </div>`;
+}
 
 // ── カードビルダー ─────────────────────────────────────────────
 function build_status(system, meta) {
@@ -509,9 +583,25 @@ function build_performance(daily, monthly) {
           <span class="detail-label">期待値 [EV]</span>
           <span class="${ev_c}">${ev_text}</span>
         </div>
-        <div class="detail-row">
-          <span class="detail-label">最大下落 [DD]</span>
-          <span class="${dd_c}">${fmt_dd(dd_r)}</span>
+        <div class="detail-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+          <div style="display:flex;justify-content:space-between;">
+            <span class="detail-label">最大下落 [DD]</span>
+            <span class="${dd_c}" style="font-weight:700;">${fmt_dd(dd_r)}</span>
+          </div>
+          ${dd_r !== null ? (() => {
+            const pct = Math.min(dd_r / 5 * 100, 100);
+            const fill_cls = dd_r >= 5.0 ? "danger" : dd_r >= 4.0 ? "warn" : "";
+            return `
+            <div class="dd-gauge-wrap">
+              <div class="dd-gauge-bar">
+                <div class="dd-gauge-fill ${fill_cls}" style="width:${pct.toFixed(1)}%"></div>
+              </div>
+              <div class="dd-gauge-row">
+                <span>0R</span>
+                <span style="color:#6b7280">上限 5R</span>
+              </div>
+            </div>`;
+          })() : ""}
         </div>
         <div class="detail-note">※ 1R = 総資産の2%。DD 5R超えで要警戒。</div>
       </div>
@@ -728,6 +818,7 @@ function render(data) {
   const alert_html = build_alert((data.system || {}).alert);
   if (alert_html) parts.push(alert_html);
 
+  parts.push(build_signal_state(data.signal_state, data.last_trade_elapsed));
   parts.push(build_position(data.position));
   parts.push(`<div id="perf-card-wrap">${build_performance(data.daily, data.monthly)}</div>`);
   parts.push(build_sessions(data.sessions));
