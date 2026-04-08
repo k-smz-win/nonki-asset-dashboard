@@ -1,0 +1,6 @@
+# Pythonスクリプトは本体リポジトリで管理
+*.py
+__pycache__/
+
+# ローカルのみ
+pipeline_failures.json

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nonki Dashboard</title>
+  <style>
+    /* ── リセット・ベース ─────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f1117;
+      color: #e8eaf6;
+      min-height: 100vh;
+      padding: 12px;
+    }
+
+    /* ── レイアウト ───────────────────────────────── */
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ── カード共通 ───────────────────────────────── */
+    .card {
+      background: #1a1d27;
+      border-radius: 14px;
+      padding: 16px;
+      border: 1px solid #2a2d3d;
+    }
+    .card-title {
+      font-size: 11px;
+      color: #7b7f9e;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    /* ── ステータスバー ───────────────────────────── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1a1d27;
+      border-radius: 14px;
+      padding: 14px 16px;
+      border: 1px solid #2a2d3d;
+    }
+    .status-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot-green  { background: #4caf50; box-shadow: 0 0 6px #4caf5088; }
+    .dot-red    { background: #ef5350; box-shadow: 0 0 6px #ef535088; }
+    .dot-yellow { background: #ffc107; box-shadow: 0 0 6px #ffc10788; }
+    .updated-at {
+      font-size: 11px;
+      color: #555870;
+    }
+
+    /* ── アラート ─────────────────────────────────── */
+    .alert-card {
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .alert-warning { background: #2d2200; border: 1px solid #7c5c00; color: #ffc107; }
+    .alert-danger  { background: #2d0a0a; border: 1px solid #7c1a1a; color: #ef5350; }
+    .hidden { display: none !important; }
+
+    /* ── ポジション ───────────────────────────────── */
+    .position-main {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .position-sub {
+      font-size: 13px;
+      color: #7b7f9e;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-buy  { background: #0d3d1a; color: #4caf50; }
+    .badge-sell { background: #3d0d0d; color: #ef5350; }
+    .badge-none { background: #1e2030; color: #7b7f9e; }
+
+    /* ── 今月の成績 ───────────────────────────────── */
+    .stats-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .stat-box {
+      flex: 1;
+      background: #12141f;
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .stat-label {
+      font-size: 10px;
+      color: #555870;
+      line-height: 1.3;
+    }
+    .positive { color: #4caf50; }
+    .negative { color: #ef5350; }
+    .neutral  { color: #e8eaf6; }
+
+    /* 折りたたみ詳細 */
+    .details-toggle {
+      background: none;
+      border: none;
+      color: #7b7f9e;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 6px 0 0;
+      width: 100%;
+      text-align: center;
+    }
+    .details-toggle:hover { color: #aab0cc; }
+    .details-content {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #2a2d3d;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 13px;
+    }
+    .detail-label { color: #7b7f9e; }
+
+    /* ── セッション ───────────────────────────────── */
+    .session-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #1e2130;
+      font-size: 14px;
+    }
+    .session-row:last-child { border-bottom: none; }
+    .session-name {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+    }
+    .session-badges {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .badge-observe {
+      background: #1a2a3a;
+      color: #64b5f6;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-buy-only {
+      background: #0d3d1a;
+      color: #4caf50;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* Tokyo 進捗バー */
+    .progress-wrap {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #1e2130;
+    }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #7b7f9e;
+      margin-bottom: 6px;
+    }
+    progress {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    progress::-webkit-progress-bar   { background: #1e2130; border-radius: 3px; }
+    progress::-webkit-progress-value { background: #4caf50; border-radius: 3px; }
+    progress::-moz-progress-bar      { background: #4caf50; border-radius: 3px; }
+
+    /* ── エラー表示 ───────────────────────────────── */
+    .error-banner {
+      background: #2d0a0a;
+      border: 1px solid #7c1a1a;
+      border-radius: 14px;
+      padding: 14px 16px;
+      color: #ef5350;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    /* ── フッター ─────────────────────────────────── */
+    .footer {
+      text-align: center;
+      color: #3a3d52;
+      font-size: 11px;
+      padding: 8px 0 4px;
+    }
+  </style>
+</head>
+<body>
+<div class="container" id="app">
+  <div class="error-banner hidden" id="load-error">
+    データを読み込めませんでした。しばらく待って再読み込みしてください。
+  </div>
+</div>
+
+<script>
+// ── ユーティリティ ─────────────────────────────────────────────
+function fmt_pnl(jpy) {
+  if (jpy === null || jpy === undefined) return "—";
+  const sign = jpy >= 0 ? "+" : "";
+  return sign + jpy.toLocaleString("ja-JP") + "円";
+}
+
+function pnl_class(v) {
+  if (v === null || v === undefined) return "neutral";
+  return v >= 0 ? "positive" : "negative";
+}
+
+function fmt_winrate(v) {
+  if (v === null || v === undefined) return "—";
+  return Math.round(v * 100) + "%";
+}
+
+function fmt_ev(jpy) {
+  if (jpy === null || jpy === undefined) return "—";
+  const sign = jpy >= 0 ? "+" : "";
+  return sign + Math.round(jpy).toLocaleString("ja-JP") + "円/件";
+}
+
+function fmt_dd(r) {
+  if (r === null || r === undefined) return "—";
+  return r.toFixed(2) + "R";
+}
+
+function dd_class(r) {
+  if (r === null || r === undefined) return "neutral";
+  if (r >= 5.0) return "negative";
+  if (r >= 4.0) return "negative";  // 警戒
+  return "positive";
+}
+
+// ── カードビルダー ─────────────────────────────────────────────
+function build_status(system, meta) {
+  const is_running = system.status === "running";
+  const dot_cls    = is_running ? "dot-green" : "dot-red";
+  const label      = is_running ? "稼働中 [RUNNING]" : "停止中 [STOPPED]";
+  return `
+    <div class="status-bar">
+      <div class="status-label">
+        <span class="dot ${dot_cls}"></span>
+        ${label}
+      </div>
+      <div class="updated-at">最終更新: ${meta.updated_at}</div>
+    </div>`;
+}
+
+function build_alert(alert) {
+  if (!alert) return "";
+  const cls = alert.level === "danger" ? "alert-danger" : "alert-warning";
+  const icon = alert.level === "danger" ? "🔴" : "⚠️";
+  return `<div class="alert-card ${cls}">${icon} ${alert.message}</div>`;
+}
+
+function build_position(pos) {
+  let main, sub, badge;
+  if (pos.has_position) {
+    const dir_label = pos.direction === "buy" ? "買い [BUY]" : "売り [SELL]";
+    const badge_cls = pos.direction === "buy" ? "badge-buy" : "badge-sell";
+    main  = `${pos.symbol} <span class="badge ${badge_cls}">${dir_label}</span>`;
+    sub   = "保有中（損益はリアルタイム反映されません）";
+  } else {
+    main  = `<span class="badge badge-none">ポジションなし</span>`;
+    sub   = "現在取引していません";
+  }
+  return `
+    <div class="card">
+      <div class="card-title">📍 現在のポジション [Position]</div>
+      <div class="position-main">${main}</div>
+      <div class="position-sub">${sub}</div>
+    </div>`;
+}
+
+function build_monthly(m) {
+  const pnl_c = pnl_class(m.pnl_jpy);
+  return `
+    <div class="card">
+      <div class="card-title">📅 今月の成績 [Monthly]</div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-value">✅ ${m.wins}</div>
+          <div class="stat-label">勝ち</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">❌ ${m.losses}</div>
+          <div class="stat-label">負け</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value ${pnl_c}">${fmt_pnl(m.pnl_jpy)}</div>
+          <div class="stat-label">損益 [P&amp;L]</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">${fmt_winrate(m.win_rate)}</div>
+          <div class="stat-label">勝率<br>[WinRate]</div>
+        </div>
+      </div>
+      <button class="details-toggle" onclick="toggle_details(this)">▼ 詳細を見る</button>
+      <div class="details-content hidden">
+        <div class="detail-row">
+          <span class="detail-label">期待値 [EV]</span>
+          <span class="${pnl_class(m.ev_jpy)}">${fmt_ev(m.ev_jpy)}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">最大下落 [DD]</span>
+          <span class="${dd_class(m.dd_r)}">${fmt_dd(m.dd_r)}</span>
+        </div>
+        <div class="detail-row" style="font-size:11px;color:#555870;margin-top:4px">
+          <span>※ 1R = 総資産の2%。DD 5R超えで要警戒。</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function build_sessions(sessions) {
+  const s = sessions;
+  const tokyo = s.tokyo;
+  const cur = tokyo.progress_current;
+  const tgt = tokyo.progress_target;
+  const pct = Math.round(cur / tgt * 100);
+
+  return `
+    <div class="card">
+      <div class="card-title">🗂 セッション状態 [Sessions]</div>
+      <div class="session-row">
+        <div class="session-name">
+          <span class="dot ${s.london.active ? 'dot-green' : 'dot-red'}"></span>
+          London
+        </div>
+        <span style="font-size:12px;color:#7b7f9e">${s.london.active ? '稼働中' : '停止中'}</span>
+      </div>
+      <div class="session-row">
+        <div class="session-name">
+          <span class="dot ${s.newyork.active ? 'dot-green' : 'dot-red'}"></span>
+          NewYork
+        </div>
+        <span style="font-size:12px;color:#7b7f9e">${s.newyork.active ? '稼働中' : '停止中'}</span>
+      </div>
+      <div class="session-row">
+        <div class="session-name">
+          <span class="dot dot-yellow"></span>
+          Tokyo ⭐
+        </div>
+        <div class="session-badges">
+          <span class="badge-observe">観察中 [OBSERVE]</span>
+          <span class="badge-buy-only">BUYのみ [BUY ONLY]</span>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-header">
+          <span>進捗 [Progress]</span>
+          <span>${cur} / ${tgt} 件（${pct}%）</span>
+        </div>
+        <progress value="${cur}" max="${tgt}"></progress>
+      </div>
+    </div>`;
+}
+
+function build_footer() {
+  return `<div class="footer">Nonki Asset Management</div>`;
+}
+
+// ── 詳細トグル ─────────────────────────────────────────────────
+function toggle_details(btn) {
+  const content = btn.nextElementSibling;
+  const open    = content.classList.toggle("hidden");
+  btn.textContent = open ? "▼ 詳細を見る" : "▲ 閉じる";
+}
+
+// ── メインレンダー ─────────────────────────────────────────────
+function render(data) {
+  const app = document.getElementById("app");
+  const parts = [];
+
+  parts.push(build_status(data.system, data.meta));
+  const alert_html = build_alert(data.system.alert);
+  if (alert_html) parts.push(alert_html);
+  parts.push(build_position(data.position));
+  parts.push(build_monthly(data.monthly));
+  parts.push(build_sessions(data.sessions));
+  parts.push(build_footer());
+
+  app.innerHTML = parts.join("");
+}
+
+// ── データ取得 ─────────────────────────────────────────────────
+fetch("data.json?t=" + Date.now())
+  .then(r => {
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  })
+  .then(data => render(data))
+  .catch(err => {
+    console.error(err);
+    document.getElementById("load-error").classList.remove("hidden");
+  });
+</script>
+</body>
+</html>
