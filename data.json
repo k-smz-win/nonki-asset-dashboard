@@ -1,6 +1,6 @@
 {
   "meta": {
-    "updated_at": "2026-04-08 23:36",
+    "updated_at": "2026-04-09 22:56",
     "version": "1.0"
   },
   "system": {
@@ -8,27 +8,27 @@
     "alert": null
   },
   "position": {
-    "has_position": true,
-    "symbol": "USDJPY",
-    "direction": "buy",
+    "has_position": false,
+    "symbol": null,
+    "direction": null,
     "pnl_pips": null,
     "pnl_jpy": null
   },
   "daily": {
-    "wins": 1,
+    "wins": 0,
     "losses": 0,
-    "pnl_jpy": 1500,
-    "win_rate": 1.0,
-    "ev_jpy": 1500,
+    "pnl_jpy": 0,
+    "win_rate": null,
+    "ev_jpy": null,
     "dd_r": null
   },
   "monthly": {
-    "wins": 4,
-    "losses": 1,
-    "pnl_jpy": 6200,
-    "win_rate": 0.8,
-    "ev_jpy": 1240,
-    "dd_r": 1.01
+    "wins": 0,
+    "losses": 0,
+    "pnl_jpy": 0,
+    "win_rate": null,
+    "ev_jpy": null,
+    "dd_r": 0.0
   },
   "sessions": {
     "london": {
@@ -43,52 +43,39 @@
       "active": true,
       "mode": "observe",
       "direction": "buy_only",
-      "progress_current": 29,
+      "progress_current": 0,
       "progress_target": 50,
-      "ev_pips": 0.66,
-      "dd_r": 4.22,
       "alert": null
     }
   },
   "signal_state": {
-    "status": "in_position",
-    "label": "ポジション保有中",
-    "sub": "次のシグナル待機中"
+    "status": "waiting",
+    "label": "次のチャンス待ち",
+    "sub": "条件成立を監視中"
   },
-  "last_trade_elapsed": "2時間前",
-  "recent_trades": [
+  "last_trade_elapsed": null,
+  "recent_trades": [],
+  "skip_reasons": [
     {
-      "pair": "USDJPY",
-      "direction": "buy",
-      "pnl_jpy": 1500,
-      "result": "win",
-      "timestamp": "04/08 09:15",
-      "session": "tokyo",
-      "signal_type": "perfect"
+      "reason": "session_not_allowed(tokyo)",
+      "count": 8
     },
     {
-      "pair": "USDJPY",
-      "direction": "buy",
-      "pnl_jpy": -800,
-      "result": "loss",
-      "timestamp": "04/07 16:30",
-      "session": "london",
-      "signal_type": "perfect"
+      "reason": "low_confidence(0.62<0.70_london)",
+      "count": 4
     },
     {
-      "pair": "EURJPY",
-      "direction": "sell",
-      "pnl_jpy": 2100,
-      "result": "win",
-      "timestamp": "04/06 22:10",
-      "session": "newyork",
-      "signal_type": null
+      "reason": "low_confidence(0.62<0.69_overlap)",
+      "count": 3
+    },
+    {
+      "reason": "trend_range",
+      "count": 2
+    },
+    {
+      "reason": "low_confidence(0.67<0.70_london)",
+      "count": 2
     }
   ],
-  "alert_history": [
-    {
-      "timestamp": "04/07 21:30",
-      "message": "DD注意: 3.8R / 上限5R"
-    }
-  ]
+  "alert_history": []
 }
