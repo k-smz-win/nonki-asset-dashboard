@@ -321,6 +321,15 @@
     .alert-hist-time { color: #9ca3af; white-space: nowrap; font-size: 12px; padding-top: 1px; }
     .alert-hist-msg  { color: #374151; }
 
+    /* ── スキップ理由カード ──────────────────────────────── */
+    .skip-total   { font-size: 12px; font-weight: normal; color: #9ca3af; margin-left: 8px; }
+    .skip-list    { display: flex; flex-direction: column; gap: 8px; }
+    .skip-row     { display: grid; grid-template-columns: 1fr 2fr auto; align-items: center; gap: 8px; }
+    .skip-label   { font-size: 13px; color: #374151; white-space: nowrap; }
+    .skip-bar-wrap{ background: #e5e7eb; border-radius: 4px; height: 8px; overflow: hidden; }
+    .skip-bar     { height: 100%; background: #6366f1; border-radius: 4px; min-width: 2px; transition: width 0.4s; }
+    .skip-count   { font-size: 12px; color: #6b7280; white-space: nowrap; text-align: right; }
+
     /* ── ① シグナル状態カード ──────────────────────────── */
     .signal-card {
       display: flex;
@@ -752,6 +761,60 @@ function build_recent_trades(trades) {
 }
 
 // ⑤ アラート履歴
+function build_skip_reasons(reasons) {
+  const list = (reasons || []);
+  const total = list.reduce((s, r) => s + r.count, 0);
+
+  const LABELS = {
+    "trend_range":                   { icon: "🔀", label: "レンジ相場（方向なし）" },
+    "direction_none":                { icon: "❓", label: "AI方向判断不可" },
+    "low_confidence":                { icon: "📉", label: "信頼度不足" },
+    "session_not_allowed(tokyo)":    { icon: "⏸",  label: "Tokyo未解禁" },
+    "session_not_allowed(dead_zone)":{ icon: "🌙", label: "市場休止時間" },
+    "overlap_utc15_skip":            { icon: "⏭",  label: "Overlap UTC15除外" },
+    "atr_filter":                    { icon: "⚡", label: "ATRフィルター（高ボラ）" },
+    "econ_event":                    { icon: "📰", label: "経済指標前後" },
+  };
+
+  function labelFor(reason) {
+    if (!reason) return { icon: "—", label: reason };
+    for (const [key, val] of Object.entries(LABELS)) {
+      if (reason.startsWith(key)) return val;
+    }
+    // low_confidence(0.xx<0.yy_session) → 短縮表示
+    const m = reason.match(/^low_confidence\(([^)]+)\)$/);
+    if (m) return { icon: "📉", label: `信頼度不足 (${m[1]})` };
+    return { icon: "—", label: reason };
+  }
+
+  if (list.length === 0) {
+    return `
+      <div class="card">
+        <div class="card-title">⏭ 今日のスキップ理由 [Skip Reasons]</div>
+        <div class="empty-note">スキップなし（または集計なし）</div>
+      </div>`;
+  }
+
+  const bars = list.map(r => {
+    const pct  = total > 0 ? Math.round(r.count / total * 100) : 0;
+    const { icon, label } = labelFor(r.reason);
+    return `
+      <div class="skip-row">
+        <div class="skip-label">${icon} ${label}</div>
+        <div class="skip-bar-wrap">
+          <div class="skip-bar" style="width:${pct}%"></div>
+        </div>
+        <div class="skip-count">${r.count}件 (${pct}%)</div>
+      </div>`;
+  }).join("");
+
+  return `
+    <div class="card">
+      <div class="card-title">⏭ 今日のスキップ理由 [Skip Reasons] <span class="skip-total">合計 ${total}件</span></div>
+      <div class="skip-list">${bars}</div>
+    </div>`;
+}
+
 function build_alert_history(history) {
   const list = (history || []).slice(0, 3);
   if (list.length === 0) {
@@ -823,6 +886,7 @@ function render(data) {
   parts.push(`<div id="perf-card-wrap">${build_performance(data.daily, data.monthly)}</div>`);
   parts.push(build_sessions(data.sessions));
   parts.push(build_recent_trades(data.recent_trades));
+  parts.push(build_skip_reasons(data.skip_reasons));
   parts.push(build_alert_history(data.alert_history));
   parts.push(build_footer());
 
