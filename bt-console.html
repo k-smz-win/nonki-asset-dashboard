@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nonki Asset Management — BT Console</title>
+<link rel="stylesheet" href="/common.css">
+<script src="/common.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   BT Console — Page-specific styles
+   共通スタイルは /common.css で定義
+   ═══════════════════════════════════════════════════════════════ */
+
+body {
+  background-image: radial-gradient(
+    ellipse 80% 45% at 50% -5%,
+    var(--bg-radial) 0%,
+    transparent 65%
+  );
+  background-attachment: fixed;
+}
+
+.page { max-width: 1400px; margin: 0 auto; padding: 0 20px 32px; }
+
+/* KPI row */
+.kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--gap); margin-bottom: var(--gap); }
+@media (max-width: 1100px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px)  { .kpi-row { grid-template-columns: 1fr 1fr; } }
+
+.kpi-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-r);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition), border-color var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-hover) 50%, transparent);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+.kpi-card:hover { box-shadow: var(--shadow-hover); border-color: var(--border-hover); }
+.kpi-card:hover::before { opacity: 1; }
+
+.kpi-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.kpi-value {
+  font-size: 28px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.kpi-sub {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Meta grid */
+.meta-grid {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 4px 16px;
+  font-size: var(--fs-sm);
+}
+.meta-grid .mg-label { color: var(--muted); font-weight: 500; }
+.meta-grid .mg-value { color: var(--text-em); word-break: break-all; }
+.hash-val {
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-size: var(--fs-xs);
+  color: var(--green);
+}
+
+/* Verdict display */
+.verdict-banner {
+  border-radius: var(--card-r);
+  padding: 14px 24px;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  margin-bottom: 16px;
+  border: 1px solid transparent;
+}
+.verdict-match       { background: var(--green-bg); color: var(--green); border-color: rgba(63,185,80,0.3); }
+.verdict-mismatch    { background: var(--red-bg);   color: var(--red);   border-color: rgba(248,81,73,0.3); }
+.verdict-conditional { background: var(--yellow-bg); color: var(--yellow); border-color: rgba(210,153,34,0.3); }
+
+/* Execution profile tags */
+.profile-tags {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;
+}
+.profile-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; font-size: var(--fs-xs); color: var(--text);
+}
+.profile-tag .tag-label { color: var(--muted); }
+
+/* Log viewer */
+.log-viewer {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+  font-size: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* Status pills */
+.run-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 99px;
+  font-size: var(--fs-xs); font-weight: 600;
+}
+.run-status-completed { background: var(--green-bg); color: var(--green); }
+.run-status-running   { background: var(--yellow-bg); color: var(--yellow); }
+.run-status-failed    { background: var(--red-bg);   color: var(--red); }
+.run-status-pending   { background: var(--bg3);      color: var(--muted); }
+
+/* Compare selects */
+.compare-controls {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.compare-controls select {
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 12px;
+  font-size: var(--fs-sm);
+  font-family: inherit;
+  min-width: 200px;
+}
+.compare-controls select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Comparison match indicators */
+.match-flags {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;
+}
+.match-flag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 6px;
+  font-size: var(--fs-xs); font-weight: 600;
+  border: 1px solid transparent;
+}
+.match-flag.match { background: var(--green-bg); color: var(--green); border-color: rgba(63,185,80,0.2); }
+.match-flag.diff  { background: var(--red-bg);   color: var(--red);   border-color: rgba(248,81,73,0.2); }
+
+/* Grid 2-col for cards */
+.grid-2-bt { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+@media (max-width: 900px) { .grid-2-bt { grid-template-columns: 1fr; } }
+
+/* Error state */
+.bt-error {
+  background: var(--red-bg);
+  border: 1px solid var(--red);
+  border-radius: var(--card-r);
+  padding: 16px 20px;
+  color: var(--red);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--gap);
+}
+
+/* Loading skeleton */
+.bt-loading { text-align: center; padding: 40px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- ═══════ Header ═══════ -->
+<div id="header">
+  <div class="header-left">
+    <div class="brand">Nonki Asset Management <small>BT Console</small></div>
+    <a href="/" class="btn-nav">🗂 Desk</a>
+    <span class="btn-nav active">🧪 BT</span>
+    <a href="/maintenance.html" class="btn-nav">🛠 保守</a>
+  </div>
+  <div class="header-right">
+    <div id="system-badge" class="badge-status status-ok"><div class="dot"></div><span id="system-badge-text">Ready</span></div>
+    <button class="btn-refresh" onclick="loadAll()">↻ 更新</button>
+    <div class="theme-switcher" role="group" aria-label="テーマ切り替え">
+      <button class="theme-btn" data-theme="dark" onclick="setTheme('dark')">
+        <span class="theme-icon">🌑</span> Dark
+      </button>
+      <button class="theme-btn" data-theme="midnight-blue" onclick="setTheme('midnight-blue')">
+        <span class="theme-icon">🌊</span> Blue
+      </button>
+      <button class="theme-btn" data-theme="light" onclick="setTheme('light')">
+        <span class="theme-icon">☀️</span> Light
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ Summary Bar ═══════ -->
+<div id="nkm-summary-bar"></div>
+
+<!-- ═══════ Main Content ═══════ -->
+<div class="page">
+
+  <!-- Error display -->
+  <div id="bt-error" class="bt-error" style="display:none"></div>
+
+  <!-- Execution Profile -->
+  <div class="section" style="margin-bottom:var(--gap)">
+    <div class="grid-2-bt">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Execution Profile</span>
+          <span class="card-badge badge-info">Fixed Dataset</span>
+        </div>
+        <div class="profile-tags">
+          <span class="profile-tag"><span class="tag-label">Dataset:</span> fx_m1_fixed_24m</span>
+          <span class="profile-tag"><span class="tag-label">TF:</span> M1</span>
+          <span class="profile-tag"><span class="tag-label">Months:</span> 24</span>
+          <span class="profile-tag"><span class="tag-label">Pairs:</span> USDJPY / EURJPY / GBPJPY</span>
+        </div>
+        <div class="profile-tags" style="margin-top:6px">
+          <span class="profile-tag"><span class="tag-label">Strategies:</span> CORE / STRUCTURE / TOKYO / ARLS / PDHL / LCF / ROS</span>
+        </div>
+        <div style="margin-top:16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+          <button class="btn-refresh" id="btnRun" onclick="runBT()" style="background:var(--green-bg); border-color:var(--green); color:var(--green); font-weight:600">
+            ▶ BT Execute
+          </button>
+          <button class="btn-refresh" onclick="loadLatest()">↻ Reload Latest</button>
+          <span id="runStatus"></span>
+        </div>
+      </div>
+
+      <!-- Latest Run Meta -->
+      <div class="card" id="latestMetaCard">
+        <div class="card-header">
+          <span class="card-title">Latest Run</span>
+          <span id="latestStatus" class="run-status run-status-pending">—</span>
+        </div>
+        <div id="runMeta" class="meta-grid">
+          <span class="mg-label">run_id</span><span class="mg-value">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Summary -->
+  <div id="kpiRow" class="kpi-row" style="display:none"></div>
+
+  <!-- Strategy Results Table -->
+  <div class="section" id="strategySection" style="display:none">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Strategy Results</span>
+        <span id="strategyCount" class="card-badge badge-info">—</span>
+      </div>
+      <div class="scroll-x">
+        <table class="tbl" id="strategyTable">
+          <thead>
+            <tr>
+              <th>Strategy</th>
+              <th class="r">Trades</th>
+              <th class="r">Wins</th>
+              <th class="r">Losses</th>
+              <th class="r">Win Rate</th>
+              <th class="r">Total PnL</th>
+              <th class="r">Monthly Avg</th>
+              <th class="r">Max DD</th>
+              <th class="r">PF</th>
+              <th class="r">Avg Trade</th>
+              <th class="r">Max Streak</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Compare Runs -->
+  <div class="section">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Compare Runs</span>
+      </div>
+      <div class="compare-controls">
+        <select id="selRun1" aria-label="Run 1"></select>
+        <span style="color:var(--muted); font-weight:600">vs</span>
+        <select id="selRun2" aria-label="Run 2"></select>
+        <button class="btn-refresh" onclick="compareRuns()">Compare</button>
+      </div>
+      <div id="verdictBanner" style="display:none"></div>
+      <div id="matchFlags" class="match-flags" style="display:none"></div>
+      <div class="scroll-x">
+        <table class="tbl" id="compareTable" style="display:none">
+          <thead>
+            <tr>
+              <th>Strategy</th>
+              <th class="r">Trades</th>
+              <th class="r">Prev</th>
+              <th class="r">Diff</th>
+              <th class="r">WR%</th>
+              <th class="r">Prev</th>
+              <th class="r">Diff</th>
+              <th class="r">PnL</th>
+              <th class="r">Prev</th>
+              <th class="r">Diff</th>
+              <th class="r">MAvg</th>
+              <th class="r">Prev</th>
+              <th class="r">Diff</th>
+              <th class="r">MaxDD</th>
+              <th class="r">Prev</th>
+              <th class="r">Diff</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Execution Log -->
+  <div class="section">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Execution Log</span>
+        <span id="logSize" class="card-badge badge-info">—</span>
+      </div>
+      <div class="log-viewer" id="logOutput">No output yet.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════ Footer ═══════ -->
+<div class="nkm-footer">Nonki Asset Management — BT Console</div>
+
+<script>
+"use strict";
+
+/* ─── API base (same origin for both port 5001 standalone and port 8080 proxy) ─── */
+const API = '';
+
+/* ─── Helpers ─── */
+function pnlCls(v) { return v > 0 ? 'pos' : v < 0 ? 'neg' : 'neu'; }
+
+function diffHtml(v, suffix) {
+  if (v == null || v === 0) return '<span class="neu">0</span>';
+  const s = suffix || '';
+  if (v > 0) return `<span class="pos">+${fmt(v)}${s}</span>`;
+  return `<span class="neg">${fmt(v)}${s}</span>`;
+}
+
+function statusCls(s) {
+  if (!s) return 'run-status-pending';
+  switch (s.toLowerCase()) {
+    case 'completed': return 'run-status-completed';
+    case 'running':   return 'run-status-running';
+    case 'failed':    return 'run-status-failed';
+    default:          return 'run-status-pending';
+  }
+}
+
+function showError(msg) {
+  const e = el('bt-error');
+  e.textContent = msg;
+  e.style.display = '';
+}
+function hideError() { el('bt-error').style.display = 'none'; }
+
+/* ─── BT Execute ─── */
+async function runBT() {
+  el('btnRun').disabled = true;
+  el('runStatus').innerHTML = '<span class="run-status run-status-running">Running...</span>';
+  hideError();
+  try {
+    const res = await fetch(API + '/api/bt/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (!res.ok) {
+      const d = await res.json();
+      throw new Error(d.error || `HTTP ${res.status}`);
+    }
+    pollStatus();
+  } catch (e) {
+    el('btnRun').disabled = false;
+    el('runStatus').innerHTML = `<span class="run-status run-status-failed">Error</span>`;
+    showError('BT Execute failed: ' + e.message);
+  }
+}
+
+async function pollStatus() {
+  try {
+    const r = await fetch(API + '/api/bt/status').then(r => r.json());
+    el('logOutput').textContent = r.last_output || 'Running...';
+    el('logSize').textContent = r.last_output ? `${(r.last_output.length / 1024).toFixed(1)} KB` : '—';
+    // Auto-scroll log
+    const log = el('logOutput');
+    log.scrollTop = log.scrollHeight;
+    if (r.running) {
+      setTimeout(pollStatus, 3000);
+    } else {
+      el('btnRun').disabled = false;
+      el('runStatus').innerHTML = '<span class="run-status run-status-completed">Done</span>';
+      loadLatest();
+      loadRunList();
+    }
+  } catch (e) {
+    el('btnRun').disabled = false;
+    el('runStatus').innerHTML = '<span class="run-status run-status-failed">Poll Error</span>';
+  }
+}
+
+/* ─── Load Latest ─── */
+async function loadLatest() {
+  hideError();
+  try {
+    const res = await fetch(API + '/api/bt/runs/latest');
+    if (!res.ok) {
+      if (res.status === 404) {
+        el('runMeta').innerHTML = '<span class="mg-label">Status</span><span class="mg-value" style="color:var(--muted)">No runs found</span>';
+        return;
+      }
+      const d = await res.json();
+      throw new Error(d.error || `HTTP ${res.status}`);
+    }
+    const r = await res.json();
+    renderLatest(r);
+  } catch (e) {
+    showError('Failed to load latest: ' + e.message);
+  }
+}
+
+function renderLatest(r) {
+  // Status badge
+  const statusEl = el('latestStatus');
+  statusEl.className = 'run-status ' + statusCls(r.status);
+  statusEl.textContent = r.status || '—';
+
+  // Meta grid
+  el('runMeta').innerHTML = `
+    <span class="mg-label">run_id</span><span class="mg-value">${escHtml(r.run_id || '—')}</span>
+    <span class="mg-label">Started</span><span class="mg-value">${escHtml((r.started_at || '').replace('T', ' ').substring(0, 19))}</span>
+    <span class="mg-label">Finished</span><span class="mg-value">${escHtml((r.finished_at || '—').replace('T', ' ').substring(0, 19))}</span>
+    <span class="mg-label">dataset_tag</span><span class="mg-value">${escHtml(r.dataset_tag || '—')}</span>
+    <span class="mg-label">dataset_hash</span><span class="mg-value hash-val">${escHtml(r.dataset_hash || '—')}</span>
+    <span class="mg-label">code_hash</span><span class="mg-value hash-val">${escHtml(r.code_hash || '—')}</span>
+    <span class="mg-label">git_commit</span><span class="mg-value hash-val">${escHtml(r.git_commit || '—')}</span>
+    <span class="mg-label">command</span><span class="mg-value" style="font-size:12px">${escHtml(r.command || '—')}</span>
+  `;
+
+  // System badge
+  el('system-badge-text').textContent = r.status === 'completed' ? 'Latest OK' : r.status || 'Ready';
+  el('system-badge').className = nkmStatusBadgeClass(
+    r.status === 'completed' ? 'ok' : r.status === 'failed' ? 'danger' : 'ok'
+  );
+
+  // KPI row
+  const strategies = r.strategies || [];
+  if (strategies.length > 0) {
+    const totalTrades = strategies.reduce((s, x) => s + (x.trades || 0), 0);
+    const totalWins   = strategies.reduce((s, x) => s + (x.wins || 0), 0);
+    const totalPnl    = strategies.reduce((s, x) => s + (x.total_pnl || 0), 0);
+    const totalMavg   = strategies.reduce((s, x) => s + (x.monthly_avg_pnl || 0), 0);
+    const worstDD     = Math.min(...strategies.map(x => x.max_dd || 0));
+    const wr = totalTrades > 0 ? (totalWins / totalTrades * 100) : 0;
+
+    el('kpiRow').style.display = '';
+    el('kpiRow').innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-label">Total Trades</div>
+        <div class="kpi-value">${fmt(totalTrades)}</div>
+        <div class="kpi-sub">${strategies.length} strategies</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Win Rate</div>
+        <div class="kpi-value ${wr >= 50 ? 'pos' : wr > 0 ? 'neg' : 'neu'}">${fmtP(wr, 1)}</div>
+        <div class="kpi-sub">${fmt(totalWins)}W / ${fmt(totalTrades - totalWins)}L</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total PnL</div>
+        <div class="kpi-value ${pnlCls(totalPnl)}">${yen(totalPnl)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Monthly Avg PnL</div>
+        <div class="kpi-value ${pnlCls(totalMavg)}">${yen(totalMavg)}</div>
+        <div class="kpi-sub">24M average</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Worst Max DD</div>
+        <div class="kpi-value neg">${yen(worstDD)}</div>
+      </div>
+    `;
+
+    // Strategy table
+    el('strategySection').style.display = '';
+    el('strategyCount').textContent = `${strategies.length} strategies / ${fmt(totalTrades)} trades`;
+    const tbody = document.querySelector('#strategyTable tbody');
+    tbody.innerHTML = strategies.map(s => `
+      <tr>
+        <td><strong>${escHtml(s.strategy)}</strong></td>
+        <td class="r">${s.trades}</td>
+        <td class="r">${s.wins || 0}</td>
+        <td class="r">${s.losses || 0}</td>
+        <td class="r ${(s.win_rate||0) >= 50 ? 'pos' : (s.win_rate||0) > 0 ? 'neg' : 'neu'}">${s.win_rate != null ? fmtP(s.win_rate, 1) : '—'}</td>
+        <td class="r ${pnlCls(s.total_pnl)}">${yen(s.total_pnl)}</td>
+        <td class="r ${pnlCls(s.monthly_avg_pnl)}">${yen(s.monthly_avg_pnl)}</td>
+        <td class="r neg">${yen(s.max_dd)}</td>
+        <td class="r">${s.profit_factor != null ? Number(s.profit_factor).toFixed(2) : '—'}</td>
+        <td class="r">${s.avg_trade != null ? yen(s.avg_trade) : '—'}</td>
+        <td class="r">${s.max_streak || '—'}</td>
+      </tr>
+    `).join('');
+  }
+
+  // Summary bar
+  const strats = r.strategies || [];
+  if (strats.length > 0) {
+    const tt = strats.reduce((s, x) => s + (x.trades || 0), 0);
+    const tw = strats.reduce((s, x) => s + (x.wins || 0), 0);
+    const tp = strats.reduce((s, x) => s + (x.total_pnl || 0), 0);
+    renderSummaryBar([
+      { label: 'Run', value: (r.run_id || '').substring(0, 8), cls: '' },
+      { label: 'Status', value: r.status || '—', cls: '' },
+      { label: 'Trades', value: String(tt), cls: '' },
+      { label: 'WR', value: fmtP(tt > 0 ? tw / tt * 100 : 0, 1), cls: (tw / tt * 100) >= 50 ? 'pos' : 'neg' },
+      { label: 'PnL', value: yen(tp), cls: sign(tp) },
+    ]);
+  }
+}
+
+/* ─── Load Run List ─── */
+async function loadRunList() {
+  try {
+    const runs = await fetch(API + '/api/bt/runs').then(r => r.json());
+    if (runs.error) return;
+    const s1 = el('selRun1');
+    const s2 = el('selRun2');
+    s1.innerHTML = s2.innerHTML = '';
+    (runs || []).forEach((r, i) => {
+      const label = `${(r.run_id||'').substring(0,8)} | ${(r.started_at||'').replace('T',' ').substring(0,16)} | ${r.status}`;
+      const opt = new Option(label, r.run_id);
+      s1.appendChild(opt);
+      s2.appendChild(opt.cloneNode(true));
+    });
+    if (runs.length >= 2) s2.selectedIndex = 1;
+  } catch (e) { /* ignore */ }
+}
+
+/* ─── Compare Runs ─── */
+async function compareRuns() {
+  const r1 = el('selRun1').value;
+  const r2 = el('selRun2').value;
+  if (!r1 || !r2) return;
+  hideError();
+
+  try {
+    const res = await fetch(API + `/api/bt/compare?run1=${r1}&run2=${r2}`);
+    if (!res.ok) {
+      const d = await res.json();
+      throw new Error(d.error || `HTTP ${res.status}`);
+    }
+    const r = await res.json();
+    renderCompare(r);
+  } catch (e) {
+    showError('Compare failed: ' + e.message);
+  }
+}
+
+function renderCompare(r) {
+  // Verdict banner
+  const vb = el('verdictBanner');
+  vb.style.display = '';
+  const vcls = r.verdict === 'FULL MATCH' ? 'verdict-match' :
+               r.verdict === 'MISMATCH'   ? 'verdict-mismatch' : 'verdict-conditional';
+  vb.className = 'verdict-banner ' + vcls;
+  vb.textContent = r.verdict;
+
+  // Match flags
+  const mf = el('matchFlags');
+  mf.style.display = '';
+  mf.innerHTML = [
+    { label: 'Dataset Hash', ok: r.same_dataset_hash },
+    { label: 'Code Hash',    ok: r.same_code_hash },
+    { label: 'Git Commit',   ok: r.same_git_commit },
+    { label: 'Command',      ok: r.same_command },
+  ].map(f => `<span class="match-flag ${f.ok ? 'match' : 'diff'}">${f.ok ? '✓' : '✗'} ${f.label}</span>`).join('');
+
+  // Table
+  const ct = el('compareTable');
+  ct.style.display = 'table';
+  const tbody = ct.querySelector('tbody');
+  tbody.innerHTML = (r.diffs || []).map(d => `
+    <tr>
+      <td><strong>${escHtml(d.strategy)}</strong></td>
+      <td class="r">${d.current_trades}</td>
+      <td class="r" style="color:var(--muted)">${d.prev_trades}</td>
+      <td class="r">${diffHtml(d.diff_trades)}</td>
+      <td class="r">${d.current_wr != null ? fmtP(d.current_wr, 1) : '—'}</td>
+      <td class="r" style="color:var(--muted)">${d.prev_wr != null ? fmtP(d.prev_wr, 1) : '—'}</td>
+      <td class="r">${diffHtml(d.diff_wr != null ? d.diff_wr : 0)}</td>
+      <td class="r ${pnlCls(d.current_pnl)}">${fmt(Math.round(d.current_pnl||0))}</td>
+      <td class="r" style="color:var(--muted)">${fmt(Math.round(d.prev_pnl||0))}</td>
+      <td class="r">${diffHtml(Math.round(d.diff_pnl||0))}</td>
+      <td class="r ${pnlCls(d.current_mavg)}">${fmt(Math.round(d.current_mavg||0))}</td>
+      <td class="r" style="color:var(--muted)">${fmt(Math.round(d.prev_mavg||0))}</td>
+      <td class="r">${diffHtml(Math.round(d.diff_mavg||0))}</td>
+      <td class="r">${fmt(Math.round(d.current_dd||0))}</td>
+      <td class="r" style="color:var(--muted)">${fmt(Math.round(d.prev_dd||0))}</td>
+      <td class="r">${diffHtml(Math.round(d.diff_dd||0))}</td>
+    </tr>
+  `).join('');
+}
+
+/* ─── Load All ─── */
+function loadAll() {
+  loadLatest();
+  loadRunList();
+}
+
+/* ─── Initial Load ─── */
+loadAll();
+</script>
+</body>
+</html>

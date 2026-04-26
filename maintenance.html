@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nonki — 保守ダッシュボード</title>
+<link rel="stylesheet" href="/common.css">
+<script src="/common.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   保守ダッシュボード — Page-specific styles v3.0
+   共通スタイルは /common.css で定義
+   ═══════════════════════════════════════════════════════════════ */
+
+body {
+  background-image: radial-gradient(
+    ellipse 70% 40% at 50% -5%,
+    rgba(210,153,34,0.05) 0%, transparent 60%
+  );
+  background-attachment: fixed;
+}
+
+.page { max-width: 1400px; margin: 0 auto; padding: 0 20px 32px; }
+
+/* ── ヘルスサマリー行 ── */
+.health-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+@media (max-width: 900px) { .health-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 500px) { .health-row { grid-template-columns: 1fr; } }
+
+.health-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-r);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.health-card:hover { border-color: var(--border-hover); }
+.health-icon {
+  width: 40px; height: 40px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.health-icon.hi-ok      { background: var(--green-bg); }
+.health-icon.hi-caution { background: var(--yellow-bg); }
+.health-icon.hi-danger  { background: var(--red-bg); }
+.health-icon.hi-info    { background: var(--bg3); }
+.health-body { flex: 1; min-width: 0; }
+.health-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.health-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-em);
+}
+.health-value.hv-ok      { color: var(--green); }
+.health-value.hv-caution { color: var(--yellow); }
+.health-value.hv-danger  { color: var(--red); }
+
+/* ── ステータスバナー ── */
+.status-banner { margin-bottom: var(--gap); }
+
+/* ── 問題リスト ── */
+.issues-panel {
+  background: var(--yellow-bg);
+  border: 1px solid var(--yellow);
+  border-left: 4px solid var(--yellow);
+  border-radius: var(--card-r);
+  padding: 16px 20px;
+  margin-bottom: var(--gap);
+}
+.issues-panel.has-error {
+  background: var(--red-bg);
+  border-color: var(--red);
+  border-left-color: var(--red);
+}
+.issues-panel h3 { font-size: 1rem; margin-bottom: 10px; font-weight: 700; }
+.issues-panel ul { padding-left: 18px; margin: 0; }
+.issues-panel li { font-size: var(--fs-sm); line-height: 1.8; margin-bottom: 2px; }
+.issues-panel .issue-action {
+  font-size: var(--fs-xs); color: var(--accent); font-weight: 500; margin-left: 6px;
+}
+
+/* ── カードグリッド ── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+@media (max-width: 800px) { .card-grid { grid-template-columns: 1fr; } }
+
+/* ── カード共通（保守版） ── */
+.maint-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-r);
+  padding: 20px 22px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+.maint-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  border-radius: var(--card-r) var(--card-r) 0 0;
+  background: var(--border);
+  transition: background var(--transition);
+}
+.maint-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-hover);
+}
+.maint-card:hover::before { background: var(--accent); }
+.maint-card.severity-danger  { border-color: var(--red); }
+.maint-card.severity-danger::before  { background: var(--red); }
+.maint-card.severity-caution { border-color: var(--yellow); }
+.maint-card.severity-caution::before { background: var(--yellow); }
+.maint-card.severity-ok::before      { background: var(--green); }
+
+/* ── カードヘッダー ── */
+.maint-card .card-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.maint-card .card-title {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+}
+.maint-card .card-badge {
+  font-size: var(--fs-badge);
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+/* ── Info テーブル ── */
+.info-table { width: 100%; border-collapse: collapse; }
+.info-table tr { border-bottom: 1px solid var(--border-s); }
+.info-table tr:last-child { border-bottom: none; }
+.info-table td { padding: 9px 8px; font-size: var(--fs-sm); line-height: 1.5; }
+.info-table td:first-child {
+  color: var(--muted); width: 40%; font-weight: 500;
+  font-size: var(--fs-xs); letter-spacing: .02em;
+}
+.info-table td:last-child { color: var(--text-em); font-weight: 500; }
+
+/* ── エラーログ ── */
+.error-log { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.error-log-title { font-size: var(--fs-xs); color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+.error-log-item {
+  font-size: var(--fs-xs);
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  color: var(--red); line-height: 1.5;
+  word-wrap: break-word; white-space: pre-wrap;
+  padding: 6px 10px; margin-bottom: 4px;
+  background: rgba(248,81,73,0.04);
+  border-radius: 4px; border-left: 2px solid var(--red);
+  max-height: 80px; overflow-y: auto;
+}
+
+/* ── アクションバー ── */
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-r);
+  margin-bottom: var(--gap);
+}
+.action-bar .ab-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.action-bar .ab-sep {
+  width: 1px; height: 24px; background: var(--border); flex-shrink: 0;
+}
+.action-bar .ab-time {
+  font-size: var(--fs-xs); color: var(--muted); margin-left: auto;
+}
+
+.btn {
+  padding: 8px 18px; border-radius: 6px;
+  font-size: var(--fs-sm); font-weight: 600;
+  cursor: pointer; border: 1px solid transparent;
+  font-family: inherit;
+  transition: background var(--transition), opacity var(--transition),
+              box-shadow var(--transition), border-color var(--transition);
+}
+.btn:hover:not(:disabled) { opacity: .85; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover:not(:disabled) { box-shadow: 0 0 0 3px var(--accent-glow); }
+.btn-ghost   { background: transparent; color: var(--muted); border-color: var(--border); }
+.btn-ghost:hover:not(:disabled) { background: var(--bg3); border-color: var(--muted2); }
+.btn-danger  { background: transparent; color: var(--red); border-color: var(--red); }
+.btn-danger:hover:not(:disabled) { background: var(--red-bg); box-shadow: 0 0 0 3px var(--red-glow); }
+.btn:disabled { opacity: .35; cursor: default; }
+
+/* ── 運用操作パネル ── */
+.ops-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-r);
+  padding: 20px 22px;
+  margin-bottom: var(--gap);
+}
+.ops-panel h3 {
+  font-size: var(--fs-xs); font-weight: 600;
+  text-transform: uppercase; letter-spacing: .08em;
+  color: var(--muted);
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ops-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* ── アラート履歴 ── */
+.alert-history-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-r);
+  padding: 20px 22px;
+}
+.alert-history-panel h3 {
+  font-size: var(--fs-xs); font-weight: 600;
+  text-transform: uppercase; letter-spacing: .08em;
+  color: var(--muted);
+}
+.alert-history-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ahs-badges { display: flex; gap: 8px; align-items: center; }
+.ahs-badge {
+  padding: 2px 8px; border-radius: 10px;
+  font-weight: 600; font-size: var(--fs-xs);
+}
+.ahs-danger  { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
+.ahs-caution { background: var(--yellow-bg); color: var(--yellow); border: 1px solid var(--yellow); }
+.ahs-total   { color: var(--muted); font-size: var(--fs-xs); font-weight: 500; }
+
+/* ── フッター ── */
+.nkm-footer { margin-top: 32px; }
+
+@media (max-width: 600px) {
+  .page { padding: 0 12px 24px; }
+  .ops-buttons { flex-direction: column; }
+  .action-bar { flex-direction: column; align-items: stretch; }
+  .action-bar .ab-time { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ ヘッダー ══════════════════ -->
+<div id="header">
+  <div class="header-left">
+    <div class="brand">Nonki Asset Management <small>保守ダッシュボード</small></div>
+    <a href="/" class="btn-nav">🗂 Desk</a>
+    <a href="/bt" class="btn-nav">🧪 BT</a>
+    <span class="btn-nav active">🛠 保守</span>
+  </div>
+  <div class="header-right">
+    <div class="meta-item" id="last-fetched-header">更新: —</div>
+    <button class="btn-refresh" onclick="runCheck()">↻ 更新</button>
+    <div class="theme-switcher" role="group" aria-label="テーマ切り替え">
+      <button class="theme-btn" data-theme="dark" onclick="setTheme('dark')">
+        <span class="theme-icon">🌑</span> Dark
+      </button>
+      <button class="theme-btn" data-theme="midnight-blue" onclick="setTheme('midnight-blue')">
+        <span class="theme-icon">🌊</span> Blue
+      </button>
+      <button class="theme-btn" data-theme="light" onclick="setTheme('light')">
+        <span class="theme-icon">☀️</span> Light
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="nkm-summary-bar"></div>
+
+<div class="page">
+
+  <!-- ── ヘルスサマリー行 ── -->
+  <section class="health-row" id="health-row">
+    <div class="health-card" id="hc-docker">
+      <div class="health-icon hi-info" id="hi-docker">🐳</div>
+      <div class="health-body">
+        <div class="health-label">Container</div>
+        <div class="health-value" id="hv-docker">—</div>
+      </div>
+    </div>
+    <div class="health-card" id="hc-config">
+      <div class="health-icon hi-info" id="hi-config">🔑</div>
+      <div class="health-body">
+        <div class="health-label">Config Hash</div>
+        <div class="health-value" id="hv-config">—</div>
+      </div>
+    </div>
+    <div class="health-card" id="hc-db">
+      <div class="health-icon hi-info" id="hi-db">🗄</div>
+      <div class="health-body">
+        <div class="health-label">Database</div>
+        <div class="health-value" id="hv-db">—</div>
+      </div>
+    </div>
+    <div class="health-card" id="hc-log">
+      <div class="health-icon hi-info" id="hi-log">📋</div>
+      <div class="health-body">
+        <div class="health-label">Errors</div>
+        <div class="health-value" id="hv-log">—</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ステータスバナー（異常時のみ表示） ── -->
+  <div class="status-banner loading" id="status-banner">
+    <div class="status-icon" id="status-icon">⏳</div>
+    <div class="status-text">
+      <span class="status-label" id="status-label">確認中...</span>
+      <span class="status-time" id="status-time">読み込み中</span>
+    </div>
+  </div>
+
+  <!-- ── 問題リスト ── -->
+  <div class="issues-panel" id="issues-panel" style="display:none">
+    <h3 id="issues-title">⚠️ 問題の詳細</h3>
+    <ul id="issues-list"></ul>
+  </div>
+
+  <!-- ── カードグリッド ── -->
+  <div class="card-grid">
+
+    <div class="maint-card" id="card-docker">
+      <div class="card-header">
+        <span class="card-title">Container</span>
+        <span class="card-badge badge-info" id="badge-docker">—</span>
+      </div>
+      <table class="info-table" id="table-docker">
+        <tr><td>ステータス</td><td class="skeleton">—</td></tr>
+        <tr><td>再起動ポリシー</td><td class="skeleton">—</td></tr>
+        <tr><td>再起動回数</td><td class="skeleton">—</td></tr>
+        <tr><td>起動日時</td><td class="skeleton">—</td></tr>
+      </table>
+    </div>
+
+    <div class="maint-card" id="card-config">
+      <div class="card-header">
+        <span class="card-title">Config Hash</span>
+        <span class="card-badge badge-info" id="badge-config">—</span>
+      </div>
+      <table class="info-table" id="table-config">
+        <tr><td>一致状況</td><td class="skeleton">—</td></tr>
+        <tr><td>本番ハッシュ</td><td class="skeleton">—</td></tr>
+        <tr><td>BT ハッシュ</td><td class="skeleton">—</td></tr>
+        <tr><td>BT 実施日時</td><td class="skeleton">—</td></tr>
+      </table>
+    </div>
+
+    <div class="maint-card" id="card-db">
+      <div class="card-header">
+        <span class="card-title">Database</span>
+        <span class="card-badge badge-info" id="badge-db">—</span>
+      </div>
+      <table class="info-table" id="table-db">
+        <tr><td>アクセス</td><td class="skeleton">—</td></tr>
+        <tr><td>最終トレード</td><td class="skeleton">—</td></tr>
+        <tr><td>オープン件数</td><td class="skeleton">—</td></tr>
+        <tr><td>サイクル数</td><td class="skeleton">—</td></tr>
+        <tr><td>連敗数</td><td class="skeleton">—</td></tr>
+        <tr><td>スキーマ</td><td class="skeleton">—</td></tr>
+      </table>
+    </div>
+
+    <div class="maint-card" id="card-log">
+      <div class="card-header">
+        <span class="card-title">Log Summary</span>
+        <span class="card-badge badge-info" id="badge-log">—</span>
+      </div>
+      <table class="info-table" id="table-log">
+        <tr><td>起動後 ERROR</td><td class="skeleton">—</td></tr>
+        <tr><td>直近24h ERROR</td><td class="skeleton">—</td></tr>
+        <tr><td>既知エラー</td><td class="skeleton">—</td></tr>
+        <tr><td>起動後 WARNING</td><td class="skeleton">—</td></tr>
+        <tr><td>最新 ERROR 時刻</td><td class="skeleton">—</td></tr>
+      </table>
+      <div class="error-log" id="error-log" style="display:none">
+        <div class="error-log-title">起動後の未知エラー（最大5件）</div>
+        <div id="error-log-items"></div>
+      </div>
+      <div class="error-log" id="known-error-log" style="display:none">
+        <div class="error-log-title" style="color:var(--muted)">既知エラー（対応不要・参考）</div>
+        <div id="known-error-log-items" style="color:var(--muted)"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── アクションバー ── -->
+  <div class="action-bar">
+    <span class="ab-label">操作</span>
+    <button class="btn btn-primary" id="btn-refresh" onclick="runCheck()">↻ 再取得</button>
+    <button class="btn btn-ghost" onclick="window.open('/api/ops','_blank')">生データ</button>
+    <div class="ab-sep"></div>
+    <span class="ab-time" id="last-fetched">最終更新: —</span>
+  </div>
+
+  <!-- ── アラート履歴 ── -->
+  <div class="alert-history-panel" id="alert-history-panel" style="display:none">
+    <div class="alert-history-header">
+      <h3>過去7日間のアラート</h3>
+      <div class="ahs-badges" id="alert-history-summary"></div>
+    </div>
+    <div class="scroll-x">
+      <table class="tbl" id="alert-history-table">
+        <thead><tr>
+          <th>日時</th><th>レベル</th><th>内容</th>
+        </tr></thead>
+        <tbody id="alert-history-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 運用操作 ── -->
+  <div class="ops-panel">
+    <h3>運用操作</h3>
+    <div class="ops-buttons">
+      <button class="btn btn-ghost" onclick="confirmAction('restart', 'コンテナを再起動しますか？\n実行中のトレードサイクルが中断されます。')">↻ コンテナ再起動</button>
+      <button class="btn btn-danger" onclick="confirmAction('stop', '⚠️ コンテナを停止しますか？\n\n全トレードが停止します。\n再開には手動で docker compose up が必要です。')">⏹ コンテナ停止</button>
+      <button class="btn btn-ghost" onclick="confirmAction('backup', 'DBバックアップを実行しますか？')">💾 DBバックアップ</button>
+    </div>
+    <div id="action-result" style="margin-top:12px;font-size:var(--fs-xs);display:none"></div>
+  </div>
+
+</div>
+
+<footer class="nkm-footer">Nonki Asset Management — System Maintenance</footer>
+
+<script>
+"use strict";
+
+/* ── ユーティリティ ── */
+
+function rawHtml(str) { return { __html: str }; }
+function span(text, cls) { return rawHtml(`<span class="${escHtml(cls)}">${escHtml(text)}</span>`); }
+function mono(text) {
+  return rawHtml(`<code style="font-family:'JetBrains Mono',Consolas,monospace;font-size:.85em">${escHtml(text)}</code>`);
+}
+
+function setCardBadge(id, level, text) {
+  const e = document.getElementById(id);
+  if (!e) return;
+  e.className = nkmBadgeClass(level);
+  e.textContent = text;
+}
+
+function setTableRows(tableId, rows) {
+  const tbl = document.getElementById(tableId);
+  if (!tbl) return;
+  tbl.innerHTML = rows.map(([label, val]) => {
+    const valHtml = (val && typeof val === "object" && val.__html !== undefined)
+      ? val.__html : escHtml(String(val ?? "—"));
+    return `<tr><td>${escHtml(label)}</td><td>${valHtml}</td></tr>`;
+  }).join("");
+}
+
+function setHealthCard(id, iconLevel, value, valueCls) {
+  const iconEl = document.getElementById('hi-' + id);
+  const valEl  = document.getElementById('hv-' + id);
+  if (iconEl) {
+    iconEl.className = 'health-icon hi-' + iconLevel;
+  }
+  if (valEl) {
+    valEl.textContent = value;
+    valEl.className = 'health-value hv-' + valueCls;
+  }
+}
+
+/* ── クライアントサイド総合判定 ── */
+
+function assess(d) {
+  const issues = [];
+  let level = "ok";
+
+  const dk = d.docker || {};
+  if (!dk.available) {
+    issues.push(`Docker 取得失敗: ${dk.error || "不明"}`);
+    level = "error";
+  } else if (!dk.running) {
+    issues.push(`コンテナが停止中 (status=${dk.status || "?"})`);
+    level = "error";
+  }
+  const rc = dk.restart_count || 0;
+  if (rc >= 3) {
+    issues.push(`コンテナが ${rc} 回再起動 — クラッシュループの可能性`);
+    if (level === "ok") level = "warn";
+  }
+
+  const cfg = d.config_hash || {};
+  if (cfg.match === false) {
+    issues.push(`config_hash 不一致 — BT: ${cfg.bt_hash || "?"} / 本番: ${cfg.live_hash || "?"}`);
+    if (level === "ok") level = "warn";
+  }
+
+  const log = d.log || {};
+  const ecBoot = log.error_count_since_boot || 0;
+  if (ecBoot > 0) {
+    issues.push(`起動後に未知の ERROR ${ecBoot} 件`);
+    if (level === "ok") level = "warn";
+  }
+
+  const db = d.db || {};
+  if (db.accessible === false) {
+    issues.push("DB に接続できません");
+    level = "error";
+  }
+  const ls = db.loss_streak || 0;
+  if (ls >= 3) {
+    issues.push(`連敗 ${ls} 件（動的閾値上昇中）`);
+    if (level === "ok") level = "warn";
+  }
+
+  return { level, issues };
+}
+
+/* ── データ取得 ── */
+
+let _cooldownTimer = null;
+
+async function runCheck() {
+  if (_cooldownTimer) return;
+
+  const btn = document.getElementById("btn-refresh");
+  btn.disabled = true;
+  btn.textContent = "⏳ 取得中...";
+
+  const banner = document.getElementById("status-banner");
+  if (banner.hidden) {
+    banner.hidden = false;
+    banner.className = "status-banner loading";
+    document.getElementById("status-icon").textContent = "⏳";
+    document.getElementById("status-label").textContent = "取得中...";
+    document.getElementById("status-time").textContent = "";
+  }
+
+  try {
+    const res = await fetch("/api/ops", { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    renderDashboard(data);
+  } catch (e) {
+    banner.hidden = false;
+    banner.className = "status-banner status-danger";
+    document.getElementById("status-icon").textContent = "❌";
+    document.getElementById("status-label").textContent = "データ取得に失敗しました";
+    document.getElementById("status-time").textContent = e.message;
+    document.getElementById("issues-panel").style.display = "none";
+  } finally {
+    const timeStr = new Date().toLocaleTimeString("ja-JP");
+    document.getElementById("last-fetched").textContent = "最終更新: " + timeStr;
+    const hdr = document.getElementById("last-fetched-header");
+    if (hdr) hdr.innerHTML = '更新: <strong>' + timeStr + '</strong>';
+
+    let remaining = 15;
+    _cooldownTimer = setInterval(() => {
+      remaining--;
+      if (remaining <= 0) {
+        clearInterval(_cooldownTimer);
+        _cooldownTimer = null;
+        btn.disabled = false;
+        btn.textContent = "↻ 再取得";
+      } else {
+        btn.textContent = `⏳ ${remaining}s`;
+      }
+    }, 1000);
+  }
+}
+
+/* ── レンダリング ── */
+
+function renderDashboard(d) {
+  const { level, issues } = assess(d);
+
+  // サマリーバー
+  const unified = nkmStatus(level);
+  const statusText = unified === 'ok' ? 'ALL OK' : unified === 'caution' ? '要確認' : '異常あり';
+  renderSummaryBar([
+    { label: 'システム', value: statusText, cls: unified === 'ok' ? 'pos' : unified === 'caution' ? '' : 'neg' },
+    { label: 'アラート', value: issues.length + '件', cls: issues.length > 0 ? 'neg' : '' },
+  ]);
+
+  renderHealthRow(d);
+  renderBanner(level, issues, d.generated_at || "");
+  renderIssues(issues, level);
+  renderDocker(d.docker || {});
+  renderConfig(d.config_hash || {});
+  renderDb(d.db || {});
+  renderLog(d.log || {});
+  renderAlertHistory(d.alert_history || []);
+}
+
+function renderHealthRow(d) {
+  const dk  = d.docker || {};
+  const cfg = d.config_hash || {};
+  const db  = d.db || {};
+  const log = d.log || {};
+
+  // Docker
+  if (!dk.available) {
+    setHealthCard('docker', 'danger', '取得失敗', 'danger');
+  } else if (!dk.running) {
+    setHealthCard('docker', 'danger', '停止中', 'danger');
+  } else {
+    const rc = dk.restart_count || 0;
+    setHealthCard('docker', rc >= 3 ? 'caution' : 'ok',
+      rc >= 3 ? '再起動 ' + rc + '回' : '稼働中',
+      rc >= 3 ? 'caution' : 'ok');
+  }
+
+  // Config
+  if (cfg.match === true) {
+    setHealthCard('config', 'ok', '一致', 'ok');
+  } else if (cfg.match === false) {
+    setHealthCard('config', 'caution', '不一致', 'caution');
+  } else {
+    setHealthCard('config', 'info', '未確認', '');
+  }
+
+  // DB
+  if (db.accessible === false) {
+    setHealthCard('db', 'danger', '異常', 'danger');
+  } else {
+    const ls = db.loss_streak || 0;
+    setHealthCard('db', ls >= 3 ? 'caution' : 'ok',
+      ls >= 3 ? '連敗 ' + ls : '正常',
+      ls >= 3 ? 'caution' : 'ok');
+  }
+
+  // Log
+  const ecBoot = log.error_count_since_boot || 0;
+  if (ecBoot > 0) {
+    setHealthCard('log', 'caution', ecBoot + ' ERROR', 'caution');
+  } else {
+    setHealthCard('log', 'ok', '0 ERROR', 'ok');
+  }
+}
+
+function renderBanner(level, issues, generatedAt) {
+  const banner = document.getElementById("status-banner");
+  const unified = nkmStatus(level);
+
+  if (unified === "ok") {
+    banner.hidden = true;
+    return;
+  }
+
+  const meta = {
+    caution: { icon: "⚠️", label: "要確認" },
+    danger:  { icon: "❌", label: "異常あり" },
+  }[unified] || { icon: "❌", label: "異常あり" };
+
+  banner.hidden = false;
+  banner.className = "status-banner status-" + unified;
+  document.getElementById("status-icon").textContent = meta.icon;
+  document.getElementById("status-label").textContent = meta.label;
+  document.getElementById("status-time").textContent = generatedAt ? "取得日時: " + generatedAt : "";
+}
+
+function _issueActionHint(issue) {
+  if (issue.includes('停止中') || issue.includes('停止'))
+    return '→ docker compose up --build -d';
+  if (issue.includes('config_hash') || issue.includes('不一致'))
+    return '→ CLAUDE.md 6ステップ確認';
+  if (issue.includes('未知の ERROR'))
+    return '→ ログカード参照';
+  if (issue.includes('再起動') || issue.includes('クラッシュ'))
+    return '→ docker logs ai_trader --tail 50';
+  if (issue.includes('連敗'))
+    return '→ 動的閾値自動発動中・様子見';
+  if (issue.includes('DB') || issue.includes('接続'))
+    return '→ DB パス・権限を確認';
+  return '';
+}
+
+function renderIssues(issues, level) {
+  const panel = document.getElementById("issues-panel");
+  const list  = document.getElementById("issues-list");
+  const title = document.getElementById("issues-title");
+
+  if (!issues.length) { panel.style.display = "none"; return; }
+
+  panel.style.display = "";
+  panel.className = "issues-panel" + (level === "error" ? " has-error" : "");
+  title.textContent = level === "error" ? "❌ 検知した異常" : "⚠️ 問題の詳細";
+  list.innerHTML = issues.map(i => {
+    const hint = _issueActionHint(i);
+    return `<li>${escHtml(i)}${hint ? '<span class="issue-action">' + hint + '</span>' : ''}</li>`;
+  }).join("");
+}
+
+/* ── カードレンダリング ── */
+
+function _applyCardSeverity(cardId, level) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  card.classList.remove('severity-danger', 'severity-caution', 'severity-ok');
+  if (level === 'danger') card.classList.add('severity-danger');
+  else if (level === 'caution') card.classList.add('severity-caution');
+  else if (level === 'ok') card.classList.add('severity-ok');
+}
+
+function renderDocker(d) {
+  if (!d.available) {
+    setCardBadge("badge-docker", "error", "取得失敗");
+    setTableRows("table-docker", [
+      ["ステータス", span("取得失敗: " + (d.error || "不明"), "val-danger")],
+    ]);
+    _applyCardSeverity("card-docker", "danger");
+    return;
+  }
+
+  const running = d.running;
+  const rc = d.restart_count || 0;
+
+  setCardBadge("badge-docker",
+    !running ? "error" : rc >= 3 ? "warn" : "ok",
+    running ? "稼働中" : (d.status || "停止"));
+  _applyCardSeverity("card-docker", !running ? "danger" : rc >= 3 ? "caution" : "ok");
+
+  setTableRows("table-docker", [
+    ["ステータス", running ? span("稼働中", "val-ok") : span((d.status || "停止") + " — 異常", "val-danger")],
+    ["再起動ポリシー", d.restart_policy === "always" ? span("always（自動再起動）", "val-ok") : span((d.restart_policy || "不明") + " — 要確認", "val-caution")],
+    ["再起動回数", rc === 0 ? "0 回" : rc >= 3 ? span(rc + " 回 — クラッシュループの可能性", "val-caution") : rc + " 回"],
+    ["起動日時", d.started_at || "—"],
+  ]);
+}
+
+function renderConfig(d) {
+  const match = d.match;
+  setCardBadge("badge-config",
+    match === true ? "ok" : match === false ? "warn" : "info",
+    match === true ? "一致" : match === false ? "不一致" : "未確認");
+  _applyCardSeverity("card-config", match === true ? "ok" : match === false ? "caution" : "");
+
+  const matchRow = match === true ? span("一致", "val-ok")
+    : match === false ? span("不一致 — CLAUDE.md 6ステップ確認", "val-caution")
+    : span("未確認（BT記録なし）", "val-muted");
+
+  const btRunAt = d.bt_run_at
+    ? d.bt_run_at + (d.bt_tier ? "（" + d.bt_tier + "）" : "")
+    : null;
+
+  setTableRows("table-config", [
+    ["一致状況", matchRow],
+    ["本番ハッシュ", mono(d.live_hash || "unknown")],
+    ["BT ハッシュ", mono(d.bt_hash || "なし")],
+    ["BT 実施日時", btRunAt ? btRunAt : span("なし", "val-muted")],
+  ]);
+}
+
+function renderDb(d) {
+  const ok = d.accessible !== false;
+  setCardBadge("badge-db", ok ? "ok" : "error", ok ? "正常" : "異常");
+  _applyCardSeverity("card-db", !ok ? "danger" : "ok");
+
+  const ls = d.loss_streak || 0;
+  const lsVal = ls >= 5 ? span(ls + " 件 — RISK_OFF 警戒", "val-danger")
+    : ls >= 3 ? span(ls + " 件 — 動的閾値上昇中", "val-caution")
+    : ls > 0 ? span(ls + " 件", "val-caution")
+    : "0 件";
+
+  setTableRows("table-db", [
+    ["アクセス", ok ? span("正常", "val-ok") : span("異常 — 接続できません", "val-danger")],
+    ["最終トレード", d.last_trade_ts ? d.last_trade_ts + " UTC" : span("なし", "val-muted")],
+    ["オープン件数", (d.open_positions ?? 0) + " 件"],
+    ["サイクル数", (d.run_count ?? 0) + " 回"],
+    ["連敗数", lsVal],
+    ["スキーマ", "v" + (d.schema_version ?? 0)],
+  ]);
+}
+
+function renderLog(d) {
+  const ecBoot = d.error_count_since_boot || 0;
+  const ec24h = d.error_count_24h || 0;
+  const ecKnown = d.known_error_count || 0;
+  const wc = d.warning_count_since_boot || 0;
+  const latest = d.latest_error_at || "";
+
+  setCardBadge("badge-log",
+    ecBoot > 0 ? "warn" : "ok",
+    ecBoot > 0 ? "起動後 " + ecBoot + " ERROR" : "正常");
+
+  setTableRows("table-log", [
+    ["起動後 ERROR", ecBoot > 0 ? span(ecBoot + " 件 — 要確認", "val-caution") : span("0 件", "val-ok")],
+    ["直近24h ERROR", ec24h > 0 ? span(ec24h + " 件", "val-caution") : "0 件"],
+    ["既知エラー", ecKnown > 0 ? span(ecKnown + " 件（旧ビルド/仕様上・対応不要）", "val-muted") : span("なし", "val-muted")],
+    ["起動後 WARNING", wc > 0 ? span(wc + " 件", "val-caution") : "0 件"],
+    ["最新 ERROR 日時", latest ? latest : span("なし", "val-muted")],
+  ]);
+
+  const logPanel = document.getElementById("error-log");
+  const logItems = document.getElementById("error-log-items");
+  if (ecBoot > 0 && d.recent_errors && d.recent_errors.length) {
+    logPanel.style.display = "";
+    logItems.innerHTML = d.recent_errors.map(e => `<div class="error-log-item">${escHtml(e)}</div>`).join("");
+  } else {
+    logPanel.style.display = "none";
+  }
+
+  const knownPanel = document.getElementById("known-error-log");
+  const knownItems = document.getElementById("known-error-log-items");
+  if (ecKnown > 0 && d.known_error_samples && d.known_error_samples.length) {
+    knownPanel.style.display = "";
+    knownItems.innerHTML = d.known_error_samples.map(e => `<div class="error-log-item" style="color:var(--muted)">${escHtml(e)}</div>`).join("");
+  } else {
+    knownPanel.style.display = "none";
+  }
+}
+
+function renderAlertHistory(history) {
+  const panel = document.getElementById("alert-history-panel");
+  const tbody = document.getElementById("alert-history-body");
+  if (!panel || !tbody) return;
+
+  if (!history.length) { panel.style.display = "none"; return; }
+  panel.style.display = "";
+
+  const summaryEl = document.getElementById("alert-history-summary");
+  if (summaryEl) {
+    const dangerCount = history.filter(e => nkmStatus(e.level) === 'danger').length;
+    const cautionCount = history.filter(e => nkmStatus(e.level) === 'caution').length;
+    let badges = `<span class="ahs-total">${history.length}件</span>`;
+    if (dangerCount > 0) badges += ` <span class="ahs-badge ahs-danger">DANGER ${dangerCount}</span>`;
+    if (cautionCount > 0) badges += ` <span class="ahs-badge ahs-caution">CAUTION ${cautionCount}</span>`;
+    summaryEl.innerHTML = badges;
+  }
+
+  const rows = history.slice().reverse();
+  tbody.innerHTML = rows.map(e => {
+    const lvl = nkmStatus(e.level);
+    const badge = lvl === 'danger'
+      ? '<span class="val-danger" style="font-weight:600">DANGER</span>'
+      : lvl === 'caution'
+      ? '<span class="val-caution" style="font-weight:600">CAUTION</span>'
+      : '<span class="val-ok">OK</span>';
+    const issues = (e.issues || []).map(i => escHtml(i)).join('<br>');
+    const ts = e.ts ? e.ts.replace('T', ' ').slice(0, 19) : '—';
+    return `<tr><td style="white-space:nowrap">${escHtml(ts)}</td><td>${badge}</td><td style="white-space:normal;max-width:500px">${issues}</td></tr>`;
+  }).join("");
+}
+
+/* ── 運用操作 ── */
+
+async function confirmAction(action, message) {
+  if (!confirm(message)) return;
+  const resultEl = document.getElementById("action-result");
+  resultEl.style.display = "";
+  resultEl.textContent = "実行中...";
+  resultEl.style.color = "var(--muted)";
+  try {
+    const url = action === 'backup' ? '/api/ops/backup' : '/api/ops/' + action;
+    const r = await fetch(url, { method: 'POST' });
+    const d = await r.json();
+    resultEl.textContent = d.message || (d.ok ? '成功' : '失敗');
+    resultEl.style.color = d.ok ? 'var(--green)' : 'var(--red)';
+    if (d.ok) setTimeout(() => runCheck(), 2000);
+  } catch (e) {
+    resultEl.textContent = 'エラー: ' + e.message;
+    resultEl.style.color = 'var(--red)';
+  }
+}
+
+/* ── 初回 + 自動ポーリング ── */
+document.addEventListener('DOMContentLoaded', () => {
+  runCheck();
+  setInterval(() => { if (!_cooldownTimer) runCheck(); }, 60000);
+});
+</script>
+</body>
+</html>

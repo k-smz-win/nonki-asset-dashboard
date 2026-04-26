@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nonki Asset Management — Strategy Desk</title>
+<link rel="stylesheet" href="/common.css">
+<script src="/common.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Strategy Desk — Page-specific styles
+   共通スタイルは /common.css で定義
+   ═══════════════════════════════════════════════════════════════ */
+
+body {
+  background-image:
+    radial-gradient(ellipse 70% 40% at 30% -5%, rgba(167,139,250,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 35% at 80% -5%, rgba(79,142,247,0.06) 0%, transparent 60%);
+  background-attachment: fixed;
+}
+
+.page { max-width: 1400px; margin: 0 auto; padding: 0 20px 32px; }
+
+/* ── ローディング / エラー ── */
+#loading-banner { margin-bottom: var(--gap); }
+
+/* ─── トップストリップ ─── */
+#top-strip {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-r);
+  padding: 14px 20px;
+  margin-bottom: var(--gap);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+#top-strip::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--purple), var(--accent), var(--cyan));
+}
+.strip-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+.strip-date {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.strip-date strong { color: var(--text-em); font-weight: 600; }
+.strip-slot {
+  font-size: var(--fs-xs);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 10px;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+.strip-gen {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.strip-pnl {
+  font-size: 28px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+.strip-pnl-label {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.strip-system {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.sys-dot-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.strip-config {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.config-badge {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+.config-match   { background: var(--green-bg);  color: var(--green);  border-color: rgba(63,185,80,0.25); }
+.config-mismatch{ background: var(--red-bg);    color: var(--red);    border-color: rgba(248,81,73,0.25); }
+.config-unknown { background: var(--bg3);       color: var(--muted);  border-color: var(--border); }
+.strip-next-action {
+  font-size: var(--fs-sm);
+  color: var(--cyan);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ─── マーケットマトリクス ─── */
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+@media (max-width: 900px) { .market-grid { grid-template-columns: 1fr; } }
+
+.market-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-r);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition), border-color var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.market-card:hover {
+  box-shadow: var(--shadow-hover);
+  border-color: var(--border-hover);
+}
+.market-card.urgency-caution { border-color: rgba(210,153,34,0.4); }
+.market-card.urgency-danger  { border-color: rgba(248,81,73,0.4); }
+
+.market-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.market-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-em);
+  flex: 1;
+}
+.market-badge {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+.badge-lv-normal  { background: var(--accent-dim); color: var(--accent);   border-color: var(--accent-ring); }
+.badge-lv-caution { background: var(--yellow-bg);  color: var(--yellow);   border-color: rgba(210,153,34,0.3); }
+.badge-lv-danger  { background: var(--red-bg);     color: var(--red);      border-color: rgba(248,81,73,0.3); }
+.badge-lv-ok      { background: var(--green-bg);   color: var(--green);    border-color: rgba(63,185,80,0.3); }
+
+.market-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  margin-bottom: 6px;
+}
+.market-row-label {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-weight: 500;
+  width: 80px;
+  flex-shrink: 0;
+}
+.market-row-val { color: var(--text); font-weight: 500; }
+.market-row-val.highlight {
+  color: var(--accent);
+  font-weight: 700;
+}
+.market-reason {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.5;
+  min-height: 1.5em;
+  padding: 6px 10px;
+  background: var(--bg3);
+  border-radius: 6px;
+  border: 1px solid var(--border-s);
+}
+.market-sep {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+.market-perf {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.perf-item {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.perf-item strong {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  display: block;
+  margin-top: 1px;
+}
+.market-pnl {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 8px;
+}
+.emergency-stop-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--red);
+  background: var(--red-bg);
+  border: 1px solid rgba(248,81,73,0.3);
+  border-radius: 6px;
+  padding: 3px 8px;
+  margin-top: 4px;
+}
+
+/* ─── 2列グリッド ─── */
+.row { display: grid; gap: var(--gap); }
+.row2 { grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) { .row2 { grid-template-columns: 1fr; } }
+
+/* ─── カードタイトル ─── */
+.sec-title {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sec-title-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--bg3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+/* ─── BT基準比較テーブル ─── */
+.bt-note {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: var(--bg3);
+  border-radius: 6px;
+  border-left: 3px solid var(--border);
+  line-height: 1.5;
+}
+
+/* ─── ヒーロー判断 ─── */
+.hero-conclusion {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-em);
+  line-height: 1.4;
+  margin-bottom: 10px;
+  padding: 12px 16px;
+  background: var(--accent-glow);
+  border-radius: 8px;
+  border: 1px solid var(--accent-ring);
+}
+.hero-caution {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--yellow);
+  padding: 8px 12px;
+  background: var(--yellow-bg);
+  border-radius: 6px;
+  border: 1px solid rgba(210,153,34,0.25);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.hero-caution-label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  display: block;
+  margin-bottom: 3px;
+  opacity: 0.75;
+}
+.improvement-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.improvement-item {
+  font-size: var(--fs-xs);
+  color: var(--text);
+  padding: 6px 10px;
+  background: var(--bg3);
+  border-radius: 6px;
+  border-left: 3px solid var(--orange);
+  line-height: 1.4;
+}
+.improvement-empty {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ─── ニュース ─── */
+.news-events {
+  list-style: none;
+  padding: 0; margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.news-event-item {
+  font-size: var(--fs-sm);
+  padding: 8px 12px;
+  background: var(--bg3);
+  border-radius: 7px;
+  border-left: 3px solid var(--yellow);
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.3;
+}
+.news-risk-summary {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  padding: 6px 0;
+}
+.news-empty {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ─── 振り返り ─── */
+.reflection-section { margin-bottom: 14px; }
+.reflection-label {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 6px;
+}
+.reflection-label.wins     { color: var(--green); }
+.reflection-label.losses   { color: var(--red); }
+.reflection-label.tomorrow { color: var(--cyan); }
+.reflection-list {
+  list-style: none;
+  padding: 0; margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ref-item-win {
+  font-size: var(--fs-sm);
+  padding: 6px 10px;
+  background: var(--green-bg);
+  border-radius: 6px;
+  border-left: 3px solid var(--green);
+  color: var(--text);
+  line-height: 1.3;
+}
+.ref-item-loss {
+  font-size: var(--fs-sm);
+  padding: 6px 10px;
+  background: var(--red-bg);
+  border-radius: 6px;
+  border-left: 3px solid var(--red);
+  color: var(--text);
+  line-height: 1.3;
+}
+.ref-item-tomorrow {
+  font-size: var(--fs-sm);
+  padding: 6px 10px;
+  background: var(--bg3);
+  border-radius: 6px;
+  border-left: 3px solid var(--cyan);
+  color: var(--text);
+  line-height: 1.3;
+}
+.ref-empty {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ─── タイムライン ─── */
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-s);
+  position: relative;
+}
+.timeline-item:last-child { border-bottom: none; }
+.tl-time {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  width: 68px;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+.tl-dot-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+.tl-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+.tl-line {
+  width: 1px;
+  flex: 1;
+  background: var(--border);
+  min-height: 16px;
+  margin-top: 3px;
+}
+.timeline-item:last-child .tl-line { display: none; }
+.tl-body { flex: 1; }
+.tl-label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.tl-detail {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: 1.4;
+}
+.tl-empty {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* ─── アクション ─── */
+.action-list {
+  list-style: none;
+  padding: 0; margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.action-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  padding: 10px 14px;
+  background: var(--bg3);
+  border-radius: 8px;
+  border: 1px solid var(--border-s);
+  line-height: 1.4;
+}
+.action-num {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-glow);
+  border-radius: 4px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.action-empty {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ─── ディープリンク ─── */
+.deeplink-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: var(--gap);
+}
+@media (max-width: 900px) { .deeplink-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px) { .deeplink-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.deeplink-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 14px 8px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-r);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+  letter-spacing: .03em;
+}
+.deeplink-btn:hover {
+  background: var(--bg3);
+  border-color: var(--accent);
+  color: var(--accent);
+  text-decoration: none;
+}
+.deeplink-btn.active-page {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.dl-key {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+}
+.deeplink-btn.active-page .dl-key { color: var(--accent); }
+
+/* ─── 判断レビュー詳細テーブル ─── */
+.review-tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-xs); margin-bottom: 12px; }
+.review-tbl th {
+  text-align: left;
+  padding: 5px 8px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+.review-tbl td {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--border-s);
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+.review-tbl tr:last-child td { border-bottom: none; }
+.review-tbl tr:hover td { background: var(--bg3); }
+.diff-zero { color: var(--muted); }
+.diff-pos  { color: var(--green); font-weight: 700; }
+.diff-neg  { color: var(--red);   font-weight: 700; }
+
+/* ─── フッター ─── */
+.desk-footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  padding: 16px 0;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.desk-footer span { color: var(--muted2); }
+
+/* ─── ユーティリティ ─── */
+.mb { margin-bottom: var(--gap); }
+.mt { margin-top: var(--gap); }
+.pill {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 10px;
+  font-size: var(--fs-xs); font-weight: 600;
+  border: 1px solid transparent;
+}
+.pill-ok     { background: var(--green-bg);  color: var(--green);  border-color: rgba(63,185,80,0.2); }
+.pill-warn   { background: var(--yellow-bg); color: var(--yellow); border-color: rgba(210,153,34,0.2); }
+.pill-danger { background: var(--red-bg);    color: var(--red);    border-color: rgba(248,81,73,0.2); }
+.pill-info   { background: var(--bg3);       color: var(--muted);  border-color: var(--border); }
+
+/* ═══════════════════════════════════════════════════════════════
+   B-案: 次の予測 / 朝AI要約 / タイムライン強化
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── 次の予測バー ─────────────────────────────────────────── */
+.forecast-card { border-left: 3px solid var(--accent); }
+.forecast-grid-pc {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 8px 0 14px;
+}
+.fc-cell {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 92px;
+}
+.fc-cell-label {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.fc-cell-main {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-em);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.fc-cell-main.muted {
+  color: var(--muted);
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+.fc-cell-detail {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.5;
+  word-break: break-word;
+}
+.fc-cell.urgency-danger { border-color: var(--red); background: var(--red-bg); }
+.fc-cell.urgency-danger .fc-cell-main { color: var(--red); }
+.fc-cell.urgency-watch  { border-color: var(--yellow); background: var(--yellow-bg); }
+.fc-cell.urgency-watch  .fc-cell-main { color: var(--yellow); }
+.fc-cell.mode-normal    { border-color: var(--green); }
+.fc-cell.mode-normal    .fc-cell-main { color: var(--green); }
+.fc-cell.mode-caution   { border-color: var(--yellow); background: var(--yellow-bg); }
+.fc-cell.mode-caution   .fc-cell-main { color: var(--yellow); }
+.fc-cell.mode-defensive,
+.fc-cell.mode-risk-off  { border-color: var(--red); background: var(--red-bg); }
+.fc-cell.mode-defensive .fc-cell-main,
+.fc-cell.mode-risk-off  .fc-cell-main { color: var(--red); }
+.forecast-action-pc {
+  padding: 12px 16px;
+  background: var(--bg-alt);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ─── 朝 AI 要約 ───────────────────────────────────────────── */
+.brief-card { border-left: 3px solid var(--yellow); }
+.brief-hint-pc {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  margin-bottom: 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+}
+.brief-hint-pc.hint-normal { color: var(--green); border-color: var(--green); }
+.brief-hint-pc.hint-check  { color: var(--accent); border-color: var(--accent); }
+.brief-hint-pc.hint-review { color: var(--yellow); border-color: var(--yellow); background: var(--yellow-bg); }
+.brief-hint-pc.hint-urgent { color: var(--red);    border-color: var(--red);    background: var(--red-bg); }
+.brief-summary-pc {
+  font-size: var(--fs-sm);
+  line-height: 1.75;
+  color: var(--text);
+  background: var(--bg-alt);
+  padding: 14px 18px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+}
+.brief-events-pc {
+  padding: 12px 16px;
+  background: var(--bg-alt);
+  border-left: 3px solid var(--yellow);
+  border-radius: 0 8px 8px 0;
+}
+.brief-events-label-pc {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.brief-events-list-pc {
+  margin: 0;
+  padding-left: 20px;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  line-height: 1.9;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── タイムライン強化 ─────────────────────────────────────── */
+.tl-note-pc {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 12px;
+  letter-spacing: 0.3px;
+}
+.timeline-item-ex {
+  display: grid;
+  grid-template-columns: 64px 16px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--bg-alt);
+  border-left: 3px solid var(--border);
+  border-radius: 0 6px 6px 0;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+.timeline-item-ex .tl-time-pc {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.timeline-item-ex .tl-dot-pc {
+  font-size: 14px;
+  text-align: center;
+  color: var(--muted);
+}
+.timeline-item-ex .tl-label-pc {
+  font-weight: 600;
+  color: var(--text);
+}
+.timeline-item-ex .tl-detail-pc {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  text-align: right;
+  word-break: break-all;
+}
+.timeline-item-ex.tl-mkt-fx    { border-left-color: var(--accent); }
+.timeline-item-ex.tl-mkt-gold  { border-left-color: var(--yellow); }
+.timeline-item-ex.tl-mkt-stock { border-left-color: var(--green); }
+.timeline-item-ex.tl-entry   .tl-dot-pc { color: var(--accent); }
+.timeline-item-ex.tl-exit    .tl-dot-pc { color: var(--green); }
+.timeline-item-ex.tl-exit.tl-result-loss .tl-dot-pc   { color: var(--red); }
+.timeline-item-ex.tl-exit.tl-result-loss .tl-detail-pc{ color: var(--red); font-weight: 700; }
+.timeline-item-ex.tl-exit.tl-result-win  .tl-detail-pc{ color: var(--green); font-weight: 700; }
+.timeline-item-ex.tl-pending .tl-dot-pc { color: var(--yellow); }
+.timeline-item-ex.tl-skip    .tl-dot-pc { color: var(--muted); }
+.timeline-item-ex.tl-skip    .tl-label-pc { color: var(--muted); font-weight: 500; }
+.timeline-item-ex.tl-mode    .tl-dot-pc { color: var(--yellow); }
+.timeline-item-ex.tl-ai      .tl-dot-pc,
+.timeline-item-ex.tl-manual  .tl-dot-pc { color: var(--accent); }
+
+/* ─── 過去 7 日レビュー (PC 限定) ─────────────────────────── */
+.history-card { border-left: 3px solid var(--purple); }
+.history-note-pc {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 12px;
+  letter-spacing: 0.3px;
+}
+.history-table-wrap { overflow-x: auto; }
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+.history-table thead th {
+  background: var(--bg-alt);
+  color: var(--muted);
+  font-weight: 700;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.3px;
+  text-align: center;
+  padding: 10px 8px;
+  border-bottom: 2px solid var(--border);
+}
+.history-table thead .h-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--muted2);
+  font-weight: 500;
+  margin-top: 2px;
+}
+.history-table tbody td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border-s);
+  text-align: center;
+  color: var(--text);
+}
+.history-table tbody tr:nth-child(even) td { background: var(--row-stripe); }
+.history-table tbody tr:hover td { background: var(--card-shine); }
+.history-table .h-date {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-em);
+  min-width: 96px;
+}
+.history-table .h-mode {
+  font-weight: 600;
+  font-size: 13px;
+  min-width: 76px;
+}
+.history-table .mode-normal     { color: var(--green); }
+.history-table .mode-caution    { color: var(--yellow); }
+.history-table .mode-defensive,
+.history-table .mode-risk-off   { color: var(--red); }
+.history-table .mode-empty      { color: var(--muted2); }
+.history-table .h-trade         { min-width: 56px; color: var(--muted); }
+.history-table .h-pnl {
+  font-weight: 700;
+  text-align: right;
+  min-width: 92px;
+}
+.history-table .h-pnl.pnl-pos { color: var(--green); }
+.history-table .h-pnl.pnl-neg { color: var(--red); }
+.history-table .h-pnl.pnl-zero { color: var(--muted); }
+.history-table .h-lvl {
+  min-width: 96px;
+  font-variant-numeric: tabular-nums;
+}
+.history-table .lvl-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.history-table .lvl-sep { color: var(--muted2); }
+/* AI と採用が一致 = 標準色 / 不一致 = yellow で強調（戦略検討の焦点） */
+.history-table .lvl-diff { color: var(--yellow); font-weight: 700; }
+.history-table .lvl-match { color: var(--text); }
+.history-table .lvl-empty { color: var(--muted2); }
+.history-table .h-today td { background: var(--accent-glow); }
+
+/* ─── Daily BT Review (§8.5) ──────────────────────────── */
+.dbt-header-pc {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.dbt-overall-pc {
+  font-size: 20px; font-weight: 800; letter-spacing: 0.3px;
+}
+.dbt-overall-pc.pass  { color: var(--green); }
+.dbt-overall-pc.review { color: var(--yellow); }
+.dbt-overall-pc.fail  { color: var(--red); }
+.dbt-meta-pc {
+  font-size: var(--fs-xs); color: var(--muted); text-align: right;
+}
+.dbt-market-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  margin-bottom: 14px;
+}
+@media (max-width: 900px) { .dbt-market-grid { grid-template-columns: 1fr; } }
+.dbt-mkt-card {
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px;
+  border-top: 3px solid var(--border);
+}
+.dbt-mkt-card.pass  { border-top-color: var(--green); }
+.dbt-mkt-card.review { border-top-color: var(--yellow); }
+.dbt-mkt-card.fail  { border-top-color: var(--red); }
+.dbt-mkt-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.dbt-mkt-name {
+  font-size: 15px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-em);
+}
+.dbt-pill {
+  font-size: 12px; font-weight: 800; padding: 2px 10px;
+  border-radius: 999px; letter-spacing: 0.3px;
+}
+.dbt-pill.pass { color: var(--green); background: var(--green-bg); }
+.dbt-pill.review { color: var(--yellow); background: var(--yellow-bg); }
+.dbt-pill.fail { color: var(--red); background: var(--red-bg); }
+.dbt-tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.dbt-tbl th { font-size: var(--fs-xs); color: var(--muted); text-align: left;
+  padding: 3px 6px; border-bottom: 1px solid var(--border); font-weight: 600; }
+.dbt-tbl td { padding: 3px 6px; border-bottom: 1px solid var(--border); }
+.dbt-tbl .r { text-align: right; font-variant-numeric: tabular-nums; }
+.dbt-tbl .diff-pos { color: var(--green); }
+.dbt-tbl .diff-neg { color: var(--red); }
+.dbt-tbl .diff-zero { color: var(--muted); }
+.dbt-reasons-pc {
+  margin-top: 10px; padding: 8px 10px;
+  background: var(--bg3); border-radius: var(--radius);
+  font-size: var(--fs-xs);
+}
+.dbt-reason-item-pc { color: var(--yellow); line-height: 1.5; }
+.dbt-reason-item-pc::before { content: "· "; }
+.dbt-hash-row {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  margin-top: 8px; font-size: var(--fs-xs); color: var(--muted);
+}
+.dbt-hash-match { color: var(--muted); }
+.dbt-hash-changed { color: var(--yellow); font-weight: 700; }
+.dbt-promoted-tag {
+  font-size: 11px; color: var(--green); font-weight: 700;
+  margin-left: 6px;
+}
+.dbt-empty-pc {
+  font-size: var(--fs-sm); color: var(--muted); font-style: italic;
+  padding: 12px 0;
+}
+.dbt-action-pc {
+  margin-top: 10px; font-size: var(--fs-sm); color: var(--accent);
+  font-weight: 700;
+}
+</style>
+</head>
+<body>
+
+<!-- ヘッダーナビゲーション -->
+<header id="header">
+  <div class="header-left">
+    <span class="brand">Nonki AM <small>Strategy Desk</small></span>
+    <nav style="display:flex;gap:6px;flex-wrap:wrap;">
+      <span class="btn-nav active">Desk</span>
+      <a class="btn-nav" href="/bt" title="BT (2)">BT</a>
+      <a class="btn-nav" href="/maintenance.html" title="保守 (3)">保守</a>
+    </nav>
+  </div>
+  <div class="header-right">
+    <span id="last-update" class="meta-item">読込中...</span>
+    <button class="btn-refresh" onclick="fetchData()" title="更新 (R)">更新</button>
+    <div class="theme-switcher">
+      <button class="theme-btn" data-theme="dark"          onclick="setTheme('dark')">
+        <span class="theme-icon">◑</span> Dark
+      </button>
+      <button class="theme-btn" data-theme="midnight-blue" onclick="setTheme('midnight-blue')">
+        <span class="theme-icon">◈</span> Blue
+      </button>
+      <button class="theme-btn" data-theme="light"         onclick="setTheme('light')">
+        <span class="theme-icon">○</span> Light
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- ローディングバナー -->
+  <div id="loading-banner" class="status-banner loading">
+    <span class="status-icon">⋯</span>
+    <div class="status-text">
+      <span class="status-label">データを取得中</span>
+    </div>
+  </div>
+
+  <!-- トップストリップ -->
+  <div id="top-strip" style="display:none">
+    <div class="strip-meta">
+      <div class="strip-date">
+        <strong id="strip-date">─</strong>
+        <span style="margin-left:6px" id="strip-slot-text"></span>
+      </div>
+      <div class="strip-slot" id="strip-slot">─</div>
+      <div class="strip-gen" id="strip-gen">生成: ─</div>
+    </div>
+    <div>
+      <div class="strip-pnl-label">本日合計 PnL</div>
+      <div class="strip-pnl" id="strip-total-pnl">─</div>
+      <div id="strip-unrealized" style="font-size:var(--fs-xs);color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums"></div>
+    </div>
+    <div class="strip-system" id="strip-system"></div>
+    <div class="strip-config" id="strip-config"></div>
+    <div class="strip-next-action" id="strip-next-action"></div>
+  </div>
+
+  <!-- 次の予測バー (B-案: LINE 通知抑制の代わりに予測情報を前面に) -->
+  <div class="card mb forecast-card" id="forecast-card" style="display:none">
+    <div class="sec-title"><span class="sec-title-icon">⏱</span> 次の予測</div>
+    <div class="forecast-grid-pc" id="forecast-content"></div>
+    <div class="forecast-action-pc" id="forecast-action"></div>
+  </div>
+
+  <!-- 朝 AI 要約 (B-案: LINE から AWS に集約) -->
+  <div class="card mb brief-card" id="brief-card" style="display:none">
+    <div class="sec-title"><span class="sec-title-icon">☀</span> 今朝の AI 要約</div>
+    <div id="brief-content"></div>
+  </div>
+
+  <!-- マーケットマトリクス -->
+  <div class="market-grid mb" id="market-grid">
+    <!-- JS で描画 -->
+  </div>
+
+  <!-- BT基準 vs 今日 / 判断レビュー -->
+  <div class="row row2 mb">
+    <div class="card" id="bt-card">
+      <div class="sec-title"><span class="sec-title-icon">B</span> BT基準 vs 今日</div>
+      <div id="bt-content"></div>
+      <div class="bt-note">
+        ※ 基準は24か月BT累積。1日との直接比較は参考値
+      </div>
+    </div>
+    <div class="card" id="review-card">
+      <div class="sec-title"><span class="sec-title-icon">R</span> 判断レビュー</div>
+      <div id="review-content"></div>
+    </div>
+  </div>
+
+  <!-- Daily BT Review (§8.5 日次昇格式 baseline 管理) -->
+  <div class="card mb" id="daily-bt-card" style="display:none">
+    <div class="sec-title"><span class="sec-title-icon">D</span> Daily BT Review</div>
+    <div id="daily-bt-content"></div>
+  </div>
+
+  <!-- ニュース要約 / 振り返り -->
+  <div class="row row2 mb">
+    <div class="card" id="news-card">
+      <div class="sec-title"><span class="sec-title-icon">N</span> ニュース要約</div>
+      <div id="news-content"></div>
+    </div>
+    <div class="card" id="reflection-card">
+      <div class="sec-title"><span class="sec-title-icon">V</span> 振り返り</div>
+      <div id="reflection-content"></div>
+    </div>
+  </div>
+
+  <!-- タイムライン (B-案: 個別通知の主系統) -->
+  <div class="card mb" id="timeline-card">
+    <div class="sec-title"><span class="sec-title-icon">T</span> 今日の動き</div>
+    <div class="tl-note-pc">
+      個別トレード通知はここで確認します · LINE には送られません
+    </div>
+    <div class="timeline-list" id="timeline-list"></div>
+  </div>
+
+  <!-- 過去 7 日レビュー (PC 限定: 戦略検討のための独自価値) -->
+  <div class="card mb history-card" id="history-card" style="display:none">
+    <div class="sec-title"><span class="sec-title-icon">7</span> 過去 7 日レビュー</div>
+    <div class="history-note-pc">
+      AI 判断・実採用・PnL・モードの推移を 1 画面で把握 · スマホには載りません
+    </div>
+    <div class="history-table-wrap">
+      <table class="history-table" id="history-table">
+        <thead>
+          <tr>
+            <th class="h-date">日付</th>
+            <th class="h-mode">モード</th>
+            <th class="h-trade">件数</th>
+            <th class="h-pnl">PnL</th>
+            <th class="h-lvl">FX<br><span class="h-sub">AI / 採用</span></th>
+            <th class="h-lvl">Gold<br><span class="h-sub">AI / 採用</span></th>
+            <th class="h-lvl">Stock<br><span class="h-sub">AI / 採用</span></th>
+          </tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 次のアクション -->
+  <div class="card mb" id="actions-card">
+    <div class="sec-title"><span class="sec-title-icon">A</span> 次のアクション</div>
+    <ul class="action-list" id="actions-list"></ul>
+  </div>
+
+  <!-- ディープリンク -->
+  <div class="deeplink-grid mb">
+    <a class="deeplink-btn active-page" href="/"><span class="dl-key">1</span>Strategy Desk</a>
+    <a class="deeplink-btn" href="/bt"><span class="dl-key">2</span>BT コンソール</a>
+    <a class="deeplink-btn" href="/maintenance.html"><span class="dl-key">3</span>保守</a>
+  </div>
+
+  <!-- フッター -->
+  <div class="desk-footer">
+    Strategy Desk &mdash; Nonki Asset Management &nbsp;<span>|</span>&nbsp;
+    <span id="footer-gen"></span>
+  </div>
+
+</main>
+
+<script>
+"use strict";
+
+/* ─── ヘルパー ─── */
+
+function stanceJa(level) {
+  const map = { 1: '攻め', 2: 'やや攻め', 3: '標準', 4: '慎重', 5: '防御' };
+  return map[level] || '─';
+}
+
+function urgencyClass(urgency) {
+  if (!urgency) return 'badge-lv-normal';
+  switch (String(urgency).toLowerCase()) {
+    case 'caution': case 'warn': case 'warning': case 'watch': return 'badge-lv-caution';
+    case 'danger':  case 'risk_off': return 'badge-lv-danger';
+    case 'ok': case 'normal': return 'badge-lv-normal';
+    default: return 'badge-lv-normal';
+  }
+}
+
+function marketCardUrgency(urgency) {
+  if (!urgency) return '';
+  switch (String(urgency).toLowerCase()) {
+    case 'caution': case 'warn': case 'watch': return 'urgency-caution';
+    case 'danger':  case 'risk_off': return 'urgency-danger';
+    default: return '';
+  }
+}
+
+function formatJstTime(utcIso) {
+  if (!utcIso) return '─';
+  try {
+    const d = new Date(utcIso);
+    if (isNaN(d.getTime())) return utcIso;
+    const jst = new Date(d.getTime() + 9 * 3600000);
+    const h = String(jst.getUTCHours()).padStart(2, '0');
+    const m = String(jst.getUTCMinutes()).padStart(2, '0');
+    const mo = String(jst.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(jst.getUTCDate()).padStart(2, '0');
+    return mo + '/' + day + ' ' + h + ':' + m + ' JST';
+  } catch (_) { return utcIso; }
+}
+
+function winRate(w, l) {
+  const total = (w || 0) + (l || 0);
+  if (!total) return null;
+  return (w || 0) / total * 100;
+}
+
+function renderNull(v) { return v == null ? '─' : v; }
+
+/* ─── トップストリップ描画 ─── */
+
+function renderTopStrip(d) {
+  const el_date = document.getElementById('strip-date');
+  const el_slot  = document.getElementById('strip-slot');
+  const el_gen   = document.getElementById('strip-gen');
+  const el_pnl   = document.getElementById('strip-total-pnl');
+  const el_unre  = document.getElementById('strip-unrealized');
+  const el_sys   = document.getElementById('strip-system');
+  const el_cfg   = document.getElementById('strip-config');
+  const el_next  = document.getElementById('strip-next-action');
+  const strip    = document.getElementById('top-strip');
+
+  if (el_date) el_date.textContent = d.business_date || '─';
+  if (el_slot) el_slot.textContent = slotJa(d.slot);
+
+  if (el_gen) el_gen.textContent = '生成: ' + formatJstTime(d.generated_at);
+
+  const perf = d.performance || {};
+  if (el_pnl) {
+    const pnl = perf.total_pnl;
+    el_pnl.textContent = yen(pnl);
+    el_pnl.className = 'strip-pnl ' + (pnl > 0 ? 'pos' : pnl < 0 ? 'neg' : 'neut');
+  }
+  if (el_unre) {
+    const u = perf.total_unrealized;
+    if (u != null && !isNaN(u)) {
+      el_unre.textContent = '含み: ' + yen(u);
+      el_unre.className = u >= 0 ? 'pos' : 'neg';
+    }
+  }
+
+  // システム状態ドット
+  if (el_sys) {
+    const sys = d.system || {};
+    const items = [
+      { key: 'fx_alive',    label: 'FX' },
+      { key: 'stock_alive', label: '株' },
+      { key: 'config_aligned', label: 'Config' },
+    ];
+    el_sys.innerHTML = items.map(it => {
+      const ok = sys[it.key] !== false;
+      const cls = ok ? 'nkm-dot-ok' : 'nkm-dot-danger';
+      return '<div class="sys-dot-item">'
+        + '<span class="nkm-dot ' + cls + '"></span>'
+        + escHtml(it.label)
+        + '</div>';
+    }).join('');
+  }
+
+  // Config alignment バッジ
+  if (el_cfg) {
+    const ca = d.config_alignment || {};
+    const markets = ['fx', 'gold', 'stock'];
+    const labels  = { fx: 'FX', gold: 'Gold', stock: '株' };
+    el_cfg.innerHTML = markets.map(m => {
+      const v = ca[m] || 'unknown';
+      let cls, text;
+      if (v === 'match')    { cls = 'config-match';    text = labels[m] + ' ✓'; }
+      else if (v === 'mismatch') { cls = 'config-mismatch'; text = labels[m] + ' ✗'; }
+      else                  { cls = 'config-unknown';  text = labels[m] + ' ?'; }
+      return '<span class="config-badge ' + cls + '">' + escHtml(text) + '</span>';
+    }).join('');
+  }
+
+  // 次のアクション
+  if (el_next) {
+    const hero = d.hero || {};
+    if (hero.next_action) {
+      el_next.textContent = hero.next_action;
+    } else {
+      el_next.textContent = '';
+    }
+  }
+
+  if (strip) strip.style.display = '';
+}
+
+function slotJa(slot) {
+  if (!slot) return '─';
+  const map = { morning: '朝便', noon: '昼便', evening: '夕便', night: '夜便' };
+  return map[String(slot).toLowerCase()] || slot;
+}
+
+/* ─── マーケットカード描画 ─── */
+
+function renderMarketGrid(d) {
+  const grid = document.getElementById('market-grid');
+  if (!grid) return;
+  const ms = d.market_summary || {};
+  const perf = d.performance || {};
+  const markets = [
+    { key: 'fx',    label: 'FX' },
+    { key: 'gold',  label: 'Gold' },
+    { key: 'stock', label: '株' },
+  ];
+  const ca = d.config_alignment || {};
+
+  grid.innerHTML = markets.map(mk => {
+    const ms_m = ms[mk.key] || {};
+    const pf_m = perf[mk.key] || {};
+    const urgency = ms_m.urgency || 'normal';
+    const lv = ms_m.applied_level;
+    const src = ms_m.applied_source;
+    const aiLv = ms_m.ai_level;
+    const manLv = ms_m.manual_level;
+    const emgStop = ms_m.emergency_stop;
+    const pnl = pf_m.pnl;
+    const wins = pf_m.wins;
+    const losses = pf_m.losses;
+    const open = pf_m.open;
+    const unrealized = pf_m.unrealized;
+    const cfgVal = ca[mk.key] || 'unknown';
+
+    const badgeCls = urgencyClass(urgency);
+    const cardCls = marketCardUrgency(urgency);
+
+    const lvText = (lv != null) ? ('Lv' + lv + ' ' + stanceJa(lv)) : '─';
+    const aiText = (aiLv != null) ? ('Lv' + aiLv + ' ' + stanceJa(aiLv)) : '─';
+    const manText = (manLv != null) ? ('Lv' + manLv + ' ' + stanceJa(manLv)) : '─';
+    const srcJa = sourceJa(src);
+
+    const reason = ms_m.manual_level != null
+      ? (ms_m.manual_reason || ms_m.ai_reason || '')
+      : (ms_m.ai_reason || '');
+
+    const pnlHtml = '<span class="' + sign(pnl) + '" style="font-variant-numeric:tabular-nums">'
+      + yen(pnl) + '</span>';
+
+    const wr = winRate(wins, losses);
+    const wrText = wr != null ? fmtP(wr, 1) : '─';
+
+    let cfgBadge = '';
+    if      (cfgVal === 'match')    cfgBadge = '<span class="config-badge config-match">Config ✓</span>';
+    else if (cfgVal === 'mismatch') cfgBadge = '<span class="config-badge config-mismatch">Config ✗</span>';
+    else                            cfgBadge = '<span class="config-badge config-unknown">Config ?</span>';
+
+    const emgHtml = emgStop
+      ? '<div class="emergency-stop-flag">EMERGENCY STOP</div>'
+      : '';
+
+    return '<div class="market-card ' + cardCls + '">'
+      + '<div class="market-head">'
+      +   '<span class="market-name">' + escHtml(mk.label) + '</span>'
+      +   '<span class="market-badge ' + badgeCls + '">' + escHtml(lvText) + '</span>'
+      + '</div>'
+      + '<div class="market-row">'
+      +   '<span class="market-row-label">AI提案</span>'
+      +   '<span class="market-row-val">' + escHtml(aiText) + '</span>'
+      + '</div>'
+      + '<div class="market-row">'
+      +   '<span class="market-row-label">手動</span>'
+      +   '<span class="market-row-val">' + escHtml(manText) + '</span>'
+      + '</div>'
+      + '<div class="market-row">'
+      +   '<span class="market-row-label">最終採用</span>'
+      +   '<span class="market-row-val highlight">' + escHtml(lvText) + ' (' + escHtml(srcJa) + ')</span>'
+      + '</div>'
+      + '<div class="market-reason">' + escHtml(reason || '理由未記録') + '</div>'
+      + emgHtml
+      + '<hr class="market-sep">'
+      + '<div class="market-pnl ' + sign(pnl) + '">' + yen(pnl) + '</div>'
+      + '<div class="market-perf">'
+      +   '<div class="perf-item">勝敗<strong>' + (wins||0) + '勝 ' + (losses||0) + '敗 <span style="font-size:13px;color:var(--muted)">(' + wrText + ')</span></strong></div>'
+      +   '<div class="perf-item">保有<strong>' + (open||0) + '件</strong></div>'
+      +   '<div class="perf-item">含み<strong class="' + sign(unrealized) + '">'
+      +     (unrealized != null ? yen(unrealized) : '─') + '</strong></div>'
+      +   '<div class="perf-item" style="align-self:center">' + cfgBadge + '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function sourceJa(src) {
+  if (!src) return '─';
+  const map = { baseline: 'baseline', ai: 'AI', manual: '手動', news: 'News' };
+  return map[String(src).toLowerCase()] || src;
+}
+
+/* ─── Daily BT Review (§8.5) ─── */
+
+function renderDailyBtReview(d) {
+  var cardEl = document.getElementById('daily-bt-card');
+  var el = document.getElementById('daily-bt-content');
+  if (!cardEl || !el) return;
+
+  var st = d.daily_bt_status;
+  if (!st) {
+    cardEl.style.display = 'none';
+    return;
+  }
+  cardEl.style.display = '';
+
+  var overall = st.overall || 'PASS';
+  var oCls = overall === 'PASS' ? 'pass' : overall === 'FAIL' ? 'fail' : 'review';
+  var oIcon = overall === 'PASS' ? '✅' : overall === 'FAIL' ? '🛑' : '⚠️';
+  var oLabel = overall === 'PASS' ? '運用OK'
+    : overall === 'FAIL' ? '要対応' : '確認待ち';
+
+  var markets = st.markets || {};
+  var executed = st.executed_at ? formatJstTime(st.executed_at) : '─';
+
+  // ── ヘッダー ──
+  var html = '<div class="dbt-header-pc">'
+    + '<div class="dbt-overall-pc ' + oCls + '">'
+    + oIcon + ' ' + oLabel + '</div>'
+    + '<div class="dbt-meta-pc">'
+    + '最終実行: ' + executed + '<br>'
+    + '→ ' + escHtml(st.action || '')
+    + '</div></div>';
+
+  // ── 市場別カード (3列) ──
+  html += '<div class="dbt-market-grid">';
+
+  var MKT_JA = { fx: 'FX', gold: 'Gold', stock: '株' };
+
+  ['fx', 'gold', 'stock'].forEach(function(m) {
+    var ms = markets[m];
+    if (!ms) {
+      html += '<div class="dbt-mkt-card">'
+        + '<div class="dbt-mkt-head"><span class="dbt-mkt-name">' + MKT_JA[m] + '</span>'
+        + '<span class="dbt-pill" style="color:var(--muted)">未実行</span></div>'
+        + '</div>';
+      return;
+    }
+
+    var j = ms.judgment || 'PASS';
+    var jCls = j === 'PASS' ? 'pass' : j === 'FAIL' ? 'fail' : 'review';
+    var jLabel = j === 'PASS' ? 'PASS' : j === 'FAIL' ? 'FAIL' : 'REVIEW';
+    var promoted = ms.promoted ? '<span class="dbt-promoted-tag">昇格済</span>' : '';
+
+    html += '<div class="dbt-mkt-card ' + jCls + '">';
+    html += '<div class="dbt-mkt-head">'
+      + '<span class="dbt-mkt-name">' + MKT_JA[m] + promoted + '</span>'
+      + '<span class="dbt-pill ' + jCls + '">' + jLabel + '</span>'
+      + '</div>';
+
+    // run_id 行
+    html += '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">'
+      + 'candidate: ' + escHtml((ms.run_id || '?').substring(0, 16))
+      + ' / baseline: ' + escHtml((ms.baseline_run_id || '(なし)').substring(0, 16))
+      + '</div>';
+
+    // 指標テーブル (Gold 以外)
+    if (m !== 'gold') {
+      var metrics = [
+        { label: '件数',  b: ms.b_trades, c: ms.c_trades, d: ms.d_trades, f: 'int' },
+        { label: '総PnL', b: ms.b_total_pnl, c: ms.c_total_pnl, d: ms.d_total_pnl, f: 'yen' },
+        { label: 'PF',    b: ms.b_pf, c: ms.c_pf, d: ms.d_pf, f: 'dec' },
+        { label: '最大DD', b: ms.b_max_dd, c: ms.c_max_dd, d: ms.d_max_dd, f: 'yen' },
+        { label: '最大連敗', b: ms.b_max_consec_loss, c: ms.c_max_consec_loss,
+          d: ms.d_max_consec_loss, f: 'int' },
+      ];
+
+      html += '<table class="dbt-tbl">';
+      html += '<thead><tr><th>指標</th><th class="r">Baseline</th>'
+        + '<th class="r">Candidate</th><th class="r">差分</th></tr></thead><tbody>';
+
+      metrics.forEach(function(row) {
+        var bv = row.b != null ? _dbtFmt(row.b, row.f) : '─';
+        var cv = row.c != null ? _dbtFmt(row.c, row.f) : '─';
+        var dv = '─';
+        var dCls = 'diff-zero';
+        if (row.d != null) {
+          dv = (row.d >= 0 ? '+' : '') + _dbtFmt(row.d, row.f);
+          dCls = row.d > 0 ? 'diff-pos' : row.d < 0 ? 'diff-neg' : 'diff-zero';
+        }
+        html += '<tr><td>' + row.label + '</td>'
+          + '<td class="r" style="color:var(--muted)">' + bv + '</td>'
+          + '<td class="r">' + cv + '</td>'
+          + '<td class="r ' + dCls + '">' + dv + '</td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+
+    // hash / window 行
+    var hashItems = [];
+    if (ms.config_changed) hashItems.push('<span class="dbt-hash-changed">config変更</span>');
+    if (ms.code_changed) hashItems.push('<span class="dbt-hash-changed">code変更</span>');
+    if (hashItems.length > 0) {
+      html += '<div class="dbt-hash-row">' + hashItems.join(' ') + '</div>';
+    }
+
+    // reasons
+    var reasons = ms.reasons || [];
+    if (reasons.length > 0) {
+      html += '<div class="dbt-reasons-pc">';
+      reasons.forEach(function(r) {
+        html += '<div class="dbt-reason-item-pc">' + escHtml(r) + '</div>';
+      });
+      html += '</div>';
+    }
+
+    // strategy_diff
+    var sdiff = ms.strategy_diff || [];
+    if (sdiff.length > 0) {
+      html += '<div class="dbt-reasons-pc" style="margin-top:4px">';
+      html += '<div style="font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:700">戦略別差分</div>';
+      sdiff.forEach(function(s) {
+        html += '<div class="dbt-reason-item-pc">' + escHtml(s) + '</div>';
+      });
+      html += '</div>';
+    }
+
+    html += '</div>'; // dbt-mkt-card
+  });
+
+  html += '</div>'; // dbt-market-grid
+
+  // ── 下部: 行動指針 ──
+  if (overall !== 'PASS') {
+    html += '<div class="dbt-action-pc">→ ' + escHtml(st.action || '') + '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+function _dbtFmt(v, f) {
+  if (v == null) return '─';
+  if (f === 'yen') return Math.round(v).toLocaleString('ja-JP');
+  if (f === 'dec') return Number(v).toFixed(2);
+  return String(Math.round(v));
+}
+
+/* ─── BT基準比較テーブル ─── */
+
+function renderBtCard(d) {
+  const el = document.getElementById('bt-content');
+  if (!el) return;
+  const bt = d.bt_baselines || {};
+  const perf = d.performance || {};
+
+  // FX優先で表示
+  const markets = [
+    { key: 'fx',    label: 'FX' },
+    { key: 'gold',  label: 'Gold' },
+    { key: 'stock', label: '株' },
+  ];
+
+  let html = '';
+  markets.forEach(mk => {
+    const base = bt[mk.key] || {};
+    const pf = perf[mk.key] || {};
+    if (!Object.keys(base).length && !pf.wins) return;
+
+    const wr = winRate(pf.wins, pf.losses);
+
+    const rows = [
+      {
+        label: '勝率',
+        bt:    base.win_rate != null ? fmtP(base.win_rate, 1) : '─',
+        today: wr != null ? fmtP(wr, 1) : '─',
+      },
+      {
+        label: 'EV/件',
+        bt:    base.ev != null ? yen(base.ev) : '─',
+        today: '─',
+      },
+      {
+        label: 'Max DD',
+        bt:    base.max_dd != null ? yen(base.max_dd) : '─',
+        today: '─',
+      },
+      {
+        label: 'PF',
+        bt:    base.pf != null ? fmt(base.pf, 2) : '─',
+        today: '─',
+      },
+    ];
+
+    html += '<div style="margin-bottom:14px">'
+      + '<div style="font-size:var(--fs-xs);font-weight:700;color:var(--muted);'
+      +   'text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">'
+      + escHtml(mk.label) + '</div>'
+      + '<table class="tbl">'
+      + '<thead><tr>'
+      +   '<th>指標</th><th class="r">BT基準</th><th class="r">今日</th>'
+      + '</tr></thead><tbody>'
+      + rows.map(r =>
+          '<tr><td>' + escHtml(r.label) + '</td>'
+          + '<td class="r" style="color:var(--muted)">' + r.bt + '</td>'
+          + '<td class="r">' + r.today + '</td></tr>'
+        ).join('')
+      + '</tbody></table></div>';
+  });
+
+  if (!html) html = '<div style="color:var(--muted);font-size:var(--fs-sm);font-style:italic">BT基準データなし</div>';
+  el.innerHTML = html;
+}
+
+/* ─── 判断レビュー ─── */
+
+function renderReviewCard(d) {
+  const el = document.getElementById('review-content');
+  if (!el) return;
+  const hero = d.hero || {};
+  const dr = d.decision_review || {};
+  const comps = dr.comparisons || {};
+  const cands = dr.improvement_candidates || [];
+
+  let html = '';
+
+  // ヒーロー結論
+  if (hero.conclusion) {
+    html += '<div class="hero-conclusion">' + escHtml(hero.conclusion) + '</div>';
+  }
+
+  // 注意
+  if (hero.caution) {
+    html += '<div class="hero-caution">'
+      + '<span class="hero-caution-label">注意</span>'
+      + escHtml(hero.caution)
+      + '</div>';
+  }
+
+  // 市場別差分テーブル
+  const markets = [
+    { key: 'fx', label: 'FX' }, { key: 'gold', label: 'Gold' }, { key: 'stock', label: '株' }
+  ];
+  const hasComps = Object.keys(comps).length > 0;
+  if (hasComps) {
+    html += '<table class="review-tbl" style="margin-bottom:12px">'
+      + '<thead><tr><th>市場</th><th>AI</th><th>手動</th><th>採用</th><th>AI差</th><th>手動差</th></tr></thead><tbody>'
+      + markets.map(mk => {
+          const c = comps[mk.key] || {};
+          const diffAi  = c.diff_ai;
+          const diffMan = c.diff_manual;
+          const daCls = diffAi === 0 ? 'diff-zero' : (diffAi > 0 ? 'diff-pos' : 'diff-neg');
+          const dmCls = diffMan === 0 ? 'diff-zero' : (diffMan > 0 ? 'diff-pos' : 'diff-neg');
+          return '<tr><td>' + escHtml(mk.label) + '</td>'
+            + '<td>' + renderNull(c.ai) + '</td>'
+            + '<td>' + renderNull(c.manual) + '</td>'
+            + '<td style="font-weight:700">' + renderNull(c.applied) + '</td>'
+            + '<td class="' + daCls + '">' + (diffAi != null ? (diffAi > 0 ? '+' + diffAi : diffAi) : '─') + '</td>'
+            + '<td class="' + dmCls + '">' + (diffMan != null ? (diffMan > 0 ? '+' + diffMan : diffMan) : '─') + '</td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table>';
+  }
+
+  // 改善候補
+  if (cands.length > 0) {
+    html += '<ul class="improvement-list">'
+      + cands.map(c => '<li class="improvement-item">' + escHtml(c) + '</li>').join('')
+      + '</ul>';
+  } else {
+    html += '<div class="improvement-empty">改善候補なし</div>';
+  }
+
+  el.innerHTML = html || '<div style="color:var(--muted);font-size:var(--fs-sm)">データなし</div>';
+}
+
+/* ─── ニュース描画 ─── */
+
+function renderNewsCard(d) {
+  const el = document.getElementById('news-content');
+  if (!el) return;
+  const news = d.news || {};
+  const events = news.events || [];
+  let html = '';
+
+  if (events.length > 0) {
+    html += '<ul class="news-events">'
+      + events.map(ev => '<li class="news-event-item">' + escHtml(ev) + '</li>').join('')
+      + '</ul>';
+  } else {
+    html += '<div class="news-empty" style="margin-bottom:10px">本日の重要イベントなし</div>';
+  }
+
+  if (news.risk_summary) {
+    html += '<div class="news-risk-summary">' + escHtml(news.risk_summary) + '</div>';
+  }
+
+  const watchPoints = news.watch_points || [];
+  if (watchPoints.length > 0) {
+    html += '<div style="margin-top:10px">'
+      + '<div style="font-size:var(--fs-xs);font-weight:700;color:var(--muted);'
+      +   'text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">ウォッチポイント</div>'
+      + '<ul class="news-events">'
+      + watchPoints.map(wp => '<li class="news-event-item" style="border-left-color:var(--cyan)">'
+          + escHtml(wp) + '</li>').join('')
+      + '</ul></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+/* ─── 振り返り描画 ─── */
+
+function renderReflectionCard(d) {
+  const el = document.getElementById('reflection-content');
+  if (!el) return;
+  const ref = d.reflections || {};
+  const wins = ref.wins || [];
+  const losses = ref.losses || [];
+  const tomorrow = ref.tomorrow || [];
+
+  let html = '';
+
+  html += '<div class="reflection-section">'
+    + '<div class="reflection-label wins">勝ち要因</div>'
+    + '<ul class="reflection-list">'
+    + (wins.length > 0
+        ? wins.map(w => '<li class="ref-item-win">' + escHtml(w) + '</li>').join('')
+        : '<li class="ref-empty">記録なし</li>')
+    + '</ul></div>';
+
+  html += '<div class="reflection-section">'
+    + '<div class="reflection-label losses">負け要因</div>'
+    + '<ul class="reflection-list">'
+    + (losses.length > 0
+        ? losses.map(l => '<li class="ref-item-loss">' + escHtml(l) + '</li>').join('')
+        : '<li class="ref-empty">記録なし</li>')
+    + '</ul></div>';
+
+  html += '<div class="reflection-section">'
+    + '<div class="reflection-label tomorrow">明日の視点</div>'
+    + '<ul class="reflection-list">'
+    + (tomorrow.length > 0
+        ? tomorrow.map(t => '<li class="ref-item-tomorrow">' + escHtml(t) + '</li>').join('')
+        : '<li class="ref-empty">記録なし</li>')
+    + '</ul></div>';
+
+  el.innerHTML = html;
+}
+
+/* ─── タイムライン描画 (B-案: type/market/result を視覚化) ─── */
+
+function renderTimeline(d) {
+  const listEl = document.getElementById('timeline-list');
+  if (!listEl) return;
+  const items = d.timeline || [];
+
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="tl-empty">今日は動きがありません</div>';
+    return;
+  }
+
+  const DOT_MAP = {
+    entry: '●', exit: '●', pending: '◐', skip: '○',
+    mode_change: '◆', ai_judgment: '◆', manual_judgment: '◆',
+  };
+
+  listEl.innerHTML = items.map(item => {
+    const jst = formatJstTime(item.time_utc);
+    const type = (item.type || 'default');
+    const market = item.market && item.market !== 'all' ? item.market : '';
+    const result = item.result || '';
+    const dot = DOT_MAP[type] || '•';
+    const classes = [
+      'timeline-item-ex',
+      'tl-' + type.replace('_', '-').replace('ai-judgment', 'ai').replace('manual-judgment', 'manual'),
+      market ? 'tl-mkt-' + market : '',
+      result ? 'tl-result-' + result : '',
+    ].filter(Boolean).join(' ');
+    return '<div class="' + classes + '">'
+      + '<div class="tl-time-pc">' + escHtml(jst) + '</div>'
+      + '<div class="tl-dot-pc">' + dot + '</div>'
+      + '<div class="tl-label-pc">' + escHtml(item.label || '') + '</div>'
+      + '<div class="tl-detail-pc">' + escHtml(item.detail || '') + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+/* ─── 次の予測描画 (B-案) ─── */
+
+function renderForecast(d) {
+  const cardEl = document.getElementById('forecast-card');
+  const contentEl = document.getElementById('forecast-content');
+  const actionEl = document.getElementById('forecast-action');
+  if (!cardEl || !contentEl) return;
+  const fc = d.next_forecast;
+  if (!fc) { cardEl.style.display = 'none'; return; }
+  cardEl.style.display = '';
+
+  const ev = fc.next_event;
+  const dg = fc.next_digest;
+  const md = fc.current_mode || { mode: 'UNKNOWN' };
+
+  function fmtCD(min) {
+    if (min == null || min <= 0) return 'まもなく';
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    if (h === 0) return m + '分後';
+    if (m === 0) return h + '時間後';
+    return h + '時間' + m + '分後';
+  }
+  function modeJa(m) {
+    return ({ NORMAL: '通常運転', CAUTION: '要警戒',
+              RANGE_DEFENSIVE: '厳重防御', RISK_OFF: '全停止',
+              UNKNOWN: '未取得' }[(m || '').toUpperCase()] || m || '─');
+  }
+  function modeCls(m) {
+    const u = (m || '').toUpperCase();
+    if (u === 'RISK_OFF') return 'mode-risk-off';
+    if (u === 'RANGE_DEFENSIVE') return 'mode-defensive';
+    if (u === 'CAUTION') return 'mode-caution';
+    return 'mode-normal';
+  }
+
+  const evCls = ev ? ('urgency-' + (ev.urgency || 'normal')) : 'urgency-normal';
+
+  let html = '';
+  // 次のイベント
+  html += '<div class="fc-cell ' + evCls + '">'
+        + '<div class="fc-cell-label">次の重要指標</div>';
+  if (ev) {
+    html += '<div class="fc-cell-main">' + fmtCD(ev.minutes_until) + '</div>'
+          + '<div class="fc-cell-detail">' + escHtml(ev.time_jst + ' ' + ev.name) + '</div>';
+  } else {
+    html += '<div class="fc-cell-main muted">今日は指標なし</div>';
+  }
+  html += '</div>';
+
+  // 次の digest
+  html += '<div class="fc-cell">'
+        + '<div class="fc-cell-label">次の通知</div>';
+  if (dg) {
+    html += '<div class="fc-cell-main">' + fmtCD(dg.minutes_until) + '</div>'
+          + '<div class="fc-cell-detail">' + escHtml(dg.label + ' (' + dg.time_jst + ')') + '</div>';
+  } else {
+    html += '<div class="fc-cell-main muted">─</div>';
+  }
+  html += '</div>';
+
+  // 現在の運用モード
+  html += '<div class="fc-cell ' + modeCls(md.mode) + '">'
+        + '<div class="fc-cell-label">現在の運用</div>'
+        + '<div class="fc-cell-main">' + escHtml(modeJa(md.mode)) + '</div>'
+        + (md.reason ? '<div class="fc-cell-detail">' + escHtml(md.reason) + '</div>' : '')
+        + '</div>';
+
+  contentEl.innerHTML = html;
+  if (actionEl) {
+    actionEl.textContent = '→ ' + (fc.expected_action || '');
+  }
+}
+
+/* ─── 過去 7 日レビュー (PC 限定) ─── */
+
+function renderSevenDayHistory(d) {
+  const cardEl = document.getElementById('history-card');
+  const bodyEl = document.getElementById('history-body');
+  if (!cardEl || !bodyEl) return;
+  const rows = d.seven_day_history || [];
+  if (rows.length === 0) { cardEl.style.display = 'none'; return; }
+  cardEl.style.display = '';
+
+  function modeCls(m) {
+    const u = (m || '').toUpperCase();
+    if (u === 'RISK_OFF') return 'mode-risk-off';
+    if (u === 'RANGE_DEFENSIVE') return 'mode-defensive';
+    if (u === 'CAUTION') return 'mode-caution';
+    if (u === 'NORMAL') return 'mode-normal';
+    return 'mode-empty';
+  }
+  function modeJa(m) {
+    return ({ NORMAL: '通常', CAUTION: '警戒',
+              RANGE_DEFENSIVE: '防御', RISK_OFF: '停止' }[(m || '').toUpperCase()]
+              || '—');
+  }
+  function fmtPnl(v) {
+    const n = Math.round(Number(v || 0));
+    if (n === 0) return '±0';
+    const s = n > 0 ? '+' : '';
+    return s + n.toLocaleString('ja-JP');
+  }
+  function pnlCls(v) {
+    const n = Number(v || 0);
+    if (n > 0) return 'pnl-pos';
+    if (n < 0) return 'pnl-neg';
+    return 'pnl-zero';
+  }
+  function lvlCell(aiLv, appliedLv) {
+    const hasAi = aiLv != null;
+    const hasApp = appliedLv != null;
+    if (!hasAi && !hasApp) return '<span class="lvl-empty">—</span>';
+    const ai = hasAi ? ('L' + aiLv) : '—';
+    const ap = hasApp ? ('L' + appliedLv) : '—';
+    // AI 判断と実採用が異なる日は yellow で強調（戦略検討の焦点）
+    const diff = hasAi && hasApp && aiLv !== appliedLv;
+    const cls = diff ? 'lvl-diff' : 'lvl-match';
+    return '<span class="lvl-cell ' + cls + '">'
+         + escHtml(ai) + '<span class="lvl-sep">／</span>' + escHtml(ap)
+         + '</span>';
+  }
+
+  const today = d.business_date || '';
+  bodyEl.innerHTML = rows.map(function(r) {
+    const dLabel = escHtml((r.date || '').slice(5));  // MM-DD
+    const todayCls = (r.date === today) ? 'h-today' : '';
+    const ai = r.ai_level || {};
+    const ap = r.applied_level || {};
+    const mode = r.mode || '';
+    const pnl = r.pnl || 0;
+    const tc = r.trade_count || 0;
+    return '<tr class="' + todayCls + '">'
+         + '<td class="h-date">' + dLabel + '</td>'
+         + '<td class="h-mode ' + modeCls(mode) + '">' + escHtml(modeJa(mode)) + '</td>'
+         + '<td class="h-trade">' + tc + '</td>'
+         + '<td class="h-pnl ' + pnlCls(pnl) + '">' + escHtml(fmtPnl(pnl)) + '</td>'
+         + '<td class="h-lvl">' + lvlCell(ai.fx, ap.fx) + '</td>'
+         + '<td class="h-lvl">' + lvlCell(ai.gold, ap.gold) + '</td>'
+         + '<td class="h-lvl">' + lvlCell(ai.stock, ap.stock) + '</td>'
+         + '</tr>';
+  }).join('');
+}
+
+/* ─── 朝 AI 要約描画 (B-案) ─── */
+
+function renderBrief(d) {
+  const cardEl = document.getElementById('brief-card');
+  const contentEl = document.getElementById('brief-content');
+  if (!cardEl || !contentEl) return;
+  const brief = d.morning_brief_full;
+  if (!brief || (!brief.summary && (!brief.key_events || brief.key_events.length === 0))) {
+    cardEl.style.display = 'none';
+    return;
+  }
+  cardEl.style.display = '';
+
+  const hintMap = {
+    normal: { emoji: '✓',  text: '通常運用',       cls: 'hint-normal' },
+    check:  { emoji: '👀', text: '状況確認推奨',   cls: 'hint-check'  },
+    review: { emoji: '📋', text: '設定見直し推奨', cls: 'hint-review' },
+    urgent: { emoji: '⚠',  text: '今すぐ確認',     cls: 'hint-urgent' },
+  };
+  const h = hintMap[brief.action_hint] || hintMap.normal;
+
+  let html = '';
+  html += '<div class="brief-hint-pc ' + h.cls + '">'
+        + '<span>' + h.emoji + '</span>'
+        + '<span>' + escHtml(h.text) + '</span>'
+        + (brief.emergency_stop ? ' <span style="margin-left:8px;padding-left:8px;border-left:1px solid var(--red);color:var(--red);font-weight:800">🛑 緊急停止推奨</span>' : '')
+        + '</div>';
+
+  if (brief.summary) {
+    html += '<div class="brief-summary-pc">' + escHtml(brief.summary) + '</div>';
+  }
+  if (brief.key_events && brief.key_events.length > 0) {
+    html += '<div class="brief-events-pc">'
+          + '<div class="brief-events-label-pc">注目イベント</div>'
+          + '<ul class="brief-events-list-pc">'
+          + brief.key_events.slice(0, 5).map(function(e) {
+              return '<li>' + escHtml(e) + '</li>';
+            }).join('')
+          + '</ul></div>';
+  }
+  contentEl.innerHTML = html;
+}
+
+/* ─── アクション描画 ─── */
+
+function renderActions(d) {
+  const listEl = document.getElementById('actions-list');
+  if (!listEl) return;
+  const actions = d.actions || [];
+
+  if (actions.length === 0) {
+    listEl.innerHTML = '<li class="action-empty">アクションなし</li>';
+    return;
+  }
+
+  listEl.innerHTML = actions.map((a, i) =>
+    '<li class="action-item">'
+    + '<span class="action-num">' + (i + 1) + '</span>'
+    + escHtml(a)
+    + '</li>'
+  ).join('');
+}
+
+/* ─── フッター ─── */
+
+function renderFooter(d) {
+  const el = document.getElementById('footer-gen');
+  if (!el) return;
+  const meta = d.meta || {};
+  el.textContent = '生成時間: ' + (meta.generation_ms != null ? meta.generation_ms + 'ms' : '─');
+}
+
+/* ─── エラー表示 ─── */
+
+function showError(msg) {
+  const banner = document.getElementById('loading-banner');
+  if (banner) {
+    banner.className = 'status-banner status-danger';
+    banner.innerHTML = '<span class="status-icon">!</span>'
+      + '<div class="status-text">'
+      + '<span class="status-label">データ取得失敗</span>'
+      + '<span class="status-time">' + escHtml(msg) + '</span>'
+      + '</div>';
+  }
+}
+
+function hideBanner() {
+  const banner = document.getElementById('loading-banner');
+  if (banner) banner.style.display = 'none';
+}
+
+/* ─── メインデータフェッチ ─── */
+
+async function fetchData() {
+  const banner = document.getElementById('loading-banner');
+  if (banner) {
+    banner.className = 'status-banner loading';
+    banner.style.display = '';
+    banner.innerHTML = '<span class="status-icon">⋯</span>'
+      + '<div class="status-text"><span class="status-label">更新中...</span></div>';
+  }
+
+  try {
+    const res = await fetch('/api/strategy_desk');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+
+    if (d.error) {
+      showError(d.error);
+      return;
+    }
+
+    renderTopStrip(d);
+    renderForecast(d);
+    renderBrief(d);
+    renderMarketGrid(d);
+    renderBtCard(d);
+    renderReviewCard(d);
+    renderDailyBtReview(d);
+    renderNewsCard(d);
+    renderReflectionCard(d);
+    renderTimeline(d);
+    renderSevenDayHistory(d);
+    renderActions(d);
+    renderFooter(d);
+
+    // ヘッダー更新時刻
+    const upd = document.getElementById('last-update');
+    if (upd) upd.textContent = '最終更新: ' + formatJstTime(d.generated_at || new Date().toISOString());
+
+    hideBanner();
+
+  } catch (err) {
+    showError(String(err));
+  }
+}
+
+/* ─── 初期化 ─── */
+
+document.addEventListener('DOMContentLoaded', function() {
+  fetchData();
+  // 5分ごとに自動更新
+  setInterval(fetchData, 5 * 60 * 1000);
+});
+</script>
+</body>
+</html>
