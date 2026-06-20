@@ -4,3 +4,4 @@ __pycache__/
 
 # ローカルのみ
 pipeline_failures.json
+weekly_report.json
